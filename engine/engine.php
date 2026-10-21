@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="robots" content="noindex">
+		<title>Netrunner: Solo Mode</title>
+		<link href="images/favicon.ico" rel="icon">
+		<?php
+		echo '<link rel="stylesheet" type="text/css" href="style.css?' . filemtime('style.css') . '" />';
+		?> 
+		<link rel="manifest" href="manifest.json">
+		<?php echo '<script src="jquery/jquery-3.2.1.min.js?' . filemtime('jquery/jquery-3.2.1.min.js') . '"></script>'; ?>
+		<?php echo '<script src="cardrenderer/pixi.min.js?' . filemtime('cardrenderer/pixi.min.js') . '"></script>'; ?>
+		<?php echo '<script src="cardrenderer/pixi-particles.min.js?' . filemtime('cardrenderer/pixi-particles.min.js') . '"></script>'; ?>
+		<?php
+		echo '<script src="cardrenderer/particlesystems.js?' . filemtime('cardrenderer/particlesystems.js') . '"></script>';
+		echo '<script src="cardrenderer/cardrenderer.js?' . filemtime('cardrenderer/cardrenderer.js') . '"></script>';
+		include 'cardrenderer/webfont.php';
+		?>
+		<?php echo '<script src="deck/lz-string.min.js?' . filemtime('deck/lz-string.min.js') . '"></script>'; ?>
+		<?php echo '<script src="deck/seedrandom.min.js?' . filemtime('deck/seedrandom.min.js') . '"></script>'; ?>
+		<!-- Google Analytics -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-Z6W2093RCW"></script>
+		<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+		gtag('config', 'G-Z6W2093RCW');
+		</script>
+		<script>
+			var cardSet = []; //prepare to receive card definitions
+			var setIdentifiers = []; //set identifiers
+		</script>
+		<script>var accessibilityMode="default";</script>
+		<?php
+		echo '<link rel="stylesheet" type="text/css" href="style.css?' . filemtime('style.css') . '" />';
+		$jsfiles = array('init','phase', 'command', 'checks', 'mechanics', 'utility', 'config');
+
+		// =================================================================
+		// ENGINE SETS - Dynamically loaded from setRegistry in config.js
+		// All sets are loaded for full game functionality
+		// See setRegistry in config.js for set documentation
+		// =================================================================
+		
+		// Load core JS files first (including config.js which defines setRegistry)
+		$maxfilemtime = 0;
+		foreach ($jsfiles as $jsfile) {
+			$thisfilemtime = filemtime($jsfile.'.js');
+			echo '<script src="'.$jsfile.'.js?' . $thisfilemtime . '"></script>';
+			if ($thisfilemtime > $maxfilemtime) {
+				$maxfilemtime = $thisfilemtime;
+			}
+		}
+		
+		// Output filetimes for all set files (for proper cache busting in JS)
+		$setFiles = glob('sets/*.js');
+		$setFiletimes = array();
+		foreach ($setFiles as $setFile) {
+			$setName = basename($setFile, '.js');
+			$setFiletimes[$setName] = filemtime($setFile);
+		}
+		echo '<script>var setFiletimes = ' . json_encode($setFiletimes) . ';</script>';
+		?>
+		<script>
+		// Dynamically load all sets from setRegistry (defined in config.js)
+		(function() {
+			var setsToLoad = [];
+			
+			// Get all sets from setRegistry.availableSets
+			if (typeof setRegistry !== 'undefined' && setRegistry.availableSets) {
+				for (var setKey in setRegistry.availableSets) {
+					setsToLoad.push(setRegistry.availableSets[setKey].file);
+				}
+			} else {
+				// Fallback if setRegistry not available
+				console.error('setRegistry not found in config.js, using fallback sets');
+				setsToLoad = ['systemgateway', 'systemupdate2021'];
+			}
+			
+			// Add engine-only sets (not in registry, used for tutorials and gauntlet perks)
+			setsToLoad.push('gauntlet');
+			setsToLoad.push('tutorial');
+			
+			// Document.write script tags with proper cache busting from PHP filetimes
+			for (var i = 0; i < setsToLoad.length; i++) {
+				var setName = setsToLoad[i];
+				var timestamp = (typeof setFiletimes !== 'undefined' && setFiletimes[setName]) 
+					? setFiletimes[setName] 
+					: Date.now();
+				document.write('<script src="sets/' + setName + '.js?' + timestamp + '"><\/script>');
+			}
+		})();
+		</script>
+		<?php
+		// Load remaining JS files
+		$remainingFiles = array('decks', 'runcalculator', 'ai_corp', 'ai_runner');
+		foreach ($remainingFiles as $jsfile) {
+			$thisfilemtime = filemtime($jsfile.'.js');
+			echo '<script src="'.$jsfile.'.js?' . $thisfilemtime . '"></script>';
+			if ($thisfilemtime > $maxfilemtime) {
+				$maxfilemtime = $thisfilemtime;
+			}
+		}
+		echo '<script>var versionReference=' . $maxfilemtime . ';</script>';
+		?> 
+		<script>
+		// Hostile Takeover modal functions for gauntlet perk display
+		var hostileTakeoverCallback = null;
+		var hostileTakeoverShown = false;
+		
+		// Convert perk number to display name
+		function getPerkName(perkNum) {
+			// Perks 7+ are disabled versions of perks 1-6
+			var basePerk = perkNum > 6 ? perkNum - 6 : perkNum;
+			var perkNames = {
+				1: 'Additional Funds',
+				2: 'Pre-Installed Neutral Ice',
+				3: 'Holdover Directive',
+				4: 'Liquidated Assets',
+				5: 'Pre-Installed Faction Ice',
+				6: 'Subsidiary Gains'
+			};
+			return perkNames[basePerk] || ('Unknown Perk ' + perkNum);
+		}
+		
+		// Check if a perk is a boss perk (should be displayed in red)
+		function isBossPerk(perkNum) {
+			var basePerk = perkNum > 6 ? perkNum - 6 : perkNum;
+			return basePerk >= 4 && basePerk <= 6;
+		}
+		
+		// Check if a perk is disabled (7+)
+		function isDisabledPerk(perkNum) {
+			return perkNum > 6;
+		}
+		
+		function showHostileTakeoverModal(perks, callback) {
+			// perks is an array of perk numbers to display
+			if (!perks || perks.length === 0) {
+				if (callback) callback();
+				return;
+			}
+			
+			hostileTakeoverCallback = callback;
+			hostileTakeoverShown = true;
+			
+			// Build the perks display - each perk on its own line with name
+			var perksHtml = '';
+			for (var i = 0; i < perks.length; i++) {
+				var perkClasses = ['hostile-takeover-perk'];
+				if (isBossPerk(perks[i])) perkClasses.push('boss-perk');
+				if (isDisabledPerk(perks[i])) perkClasses.push('disabled-perk');
+				perksHtml += '<div class="' + perkClasses.join(' ') + '">' + getPerkName(perks[i]) + '</div>';
+			}
+			
+			$('#hostile-takeover-perks').html(perksHtml);
+			$('#hostile-takeover-modal').css('display', 'flex');
+			
+			// Scroll perks list to bottom to show most recent perks
+			var perksContainer = document.getElementById('hostile-takeover-perks');
+			if (perksContainer) {
+				perksContainer.scrollTop = perksContainer.scrollHeight;
+			}
+		}
+		
+		function dismissHostileTakeoverModal() {
+			$('#hostile-takeover-modal').css('display', 'none');
+			if (hostileTakeoverCallback) {
+				var cb = hostileTakeoverCallback;
+				hostileTakeoverCallback = null;
+				cb();
+			}
+		}
+		
+		// Function to check and show hostile takeover modal on game start
+		// Returns the array of perks to show, or null if none
+		function checkHostileTakeoverOnStart(gauntletState, currentOpponentIndex) {
+			// Collect all non-zero perks from previously defeated opponents (using defeatOrder)
+			var allPerks = [];
+			var defeatOrder = gauntletState.defeatOrder || [];
+			
+			// Add perks from all previously defeated opponents (in order they were defeated)
+			for (var i = 0; i < defeatOrder.length; i++) {
+				var oppIndex = defeatOrder[i];
+				var opponent = gauntletState.opponents[oppIndex];
+				if (opponent && typeof opponent.startingPerk === 'number' && opponent.startingPerk > 0) {
+					// If perkDisabled is true, mark as disabled by adding 6 to the perk number
+					var perkValue = opponent.perkDisabled ? opponent.startingPerk + 6 : opponent.startingPerk;
+					allPerks.push(perkValue);
+				}
+			}
+			
+			// Also add the current opponent's perk (the one we're about to fight)
+			var currentOpponent = gauntletState.opponents[currentOpponentIndex];
+			if (currentOpponent && typeof currentOpponent.startingPerk === 'number' && currentOpponent.startingPerk > 0) {
+				var perkValue = currentOpponent.perkDisabled ? currentOpponent.startingPerk + 6 : currentOpponent.startingPerk;
+				allPerks.push(perkValue);
+			}
+			
+			// Only return perks if there are any non-zero ones
+			return allPerks.length > 0 ? allPerks : null;
+		}
+		
+		// Auto-check for hostile takeover when game initializes
+		// This hooks into the existing flow by checking the g parameter
+		function tryShowHostileTakeover(callback) {
+			if (hostileTakeoverShown) {
+				if (callback) callback();
+				return;
+			}
+			
+			// Get the gauntlet state from URL parameter 'g'
+			var gParam = '';
+			try {
+				var results = new RegExp('[?&]g=([^&#]*)').exec(window.location.href);
+				gParam = results ? decodeURIComponent(results[1]) : '';
+			} catch(e) {}
+			
+			if (!gParam) {
+				if (callback) callback();
+				return;
+			}
+			
+			try {
+				var gauntletState = JSON.parse(LZString.decompressFromEncodedURIComponent(gParam));
+				var currentOpponentIndex = gauntletState.currentOpponentIndex || 0;
+				var perks = checkHostileTakeoverOnStart(gauntletState, currentOpponentIndex);
+				
+				if (perks && perks.length > 0) {
+					showHostileTakeoverModal(perks, callback);
+				} else {
+					if (callback) callback();
+				}
+			} catch(e) {
+				console.log('Could not parse gauntlet state for hostile takeover check:', e);
+				if (callback) callback();
+			}
+		}
+		
+		// Get gauntlet state from URL parameter
+		function getGauntletState() {
+			var gParam = '';
+			try {
+				var results = new RegExp('[?&]g=([^&#]*)').exec(window.location.href);
+				gParam = results ? decodeURIComponent(results[1]) : '';
+			} catch(e) {}
+			
+			if (!gParam) return null;
+			
+			try {
+				return JSON.parse(LZString.decompressFromEncodedURIComponent(gParam));
+			} catch(e) {
+				console.log('Could not parse gauntlet state:', e);
+				return null;
+			}
+		}
+		
+		// Get all active perks for the current opponent (includes all perks for display, marks disabled ones)
+		function getActivePerks() {
+			var gauntletState = getGauntletState();
+			if (!gauntletState) return [];
+			
+			var currentOpponentIndex = gauntletState.currentOpponentIndex || 0;
+			var defeatOrder = gauntletState.defeatOrder || [];
+			var activePerks = [];
+			
+			// Add perks from all previously defeated opponents (in order they were defeated)
+			for (var i = 0; i < defeatOrder.length; i++) {
+				var oppIndex = defeatOrder[i];
+				var opponent = gauntletState.opponents[oppIndex];
+				if (opponent && typeof opponent.startingPerk === 'number' && opponent.startingPerk > 0) {
+					// If perkDisabled is true, mark as disabled by adding 6 to the perk number
+					var perkValue = opponent.perkDisabled ? opponent.startingPerk + 6 : opponent.startingPerk;
+					activePerks.push(perkValue);
+				}
+			}
+			
+			// Also add the current opponent's perk (the one we're fighting)
+			var currentOpponent = gauntletState.opponents[currentOpponentIndex];
+			if (currentOpponent && typeof currentOpponent.startingPerk === 'number' && currentOpponent.startingPerk > 0) {
+				var perkValue = currentOpponent.perkDisabled ? currentOpponent.startingPerk + 6 : currentOpponent.startingPerk;
+				activePerks.push(perkValue);
+			}
+			
+			return activePerks;
+		}
+		
+		// Find all neutral ice from allowed sets
+		function findNeutralIce(allowedSets) {
+			var neutralIce = [];
+			
+			for (var cardId in cardSet) {
+				var card = cardSet[cardId];
+				if (!card) continue;
+				if (card.cardType !== 'ice') continue;
+				if (card.player !== corp) continue;
+				if (card.faction !== 'Neutral') continue;
+				
+				// Check if card is from an allowed set
+				if (allowedSets && allowedSets.length > 0) {
+					var cardIdNum = parseInt(cardId);
+					var isAllowed = false;
+					for (var i = 0; i < allowedSets.length; i++) {
+						var setCode = allowedSets[i];
+						// Determine card ID range for each set
+						// sg (System Gateway): 30000-30999
+						// su21 (System Update 2021): 31000-31999
+						// ms (Midnight Sun): 33000-33999
+						// el (Elevation): 34000-34999
+						if (setCode === 'sg' && cardIdNum >= 30000 && cardIdNum < 31000) isAllowed = true;
+						else if (setCode === 'su21' && cardIdNum >= 31000 && cardIdNum < 32000) isAllowed = true;
+						else if (setCode === 'ms' && cardIdNum >= 33000 && cardIdNum < 34000) isAllowed = true;
+						else if (setCode === 'el' && cardIdNum >= 34000 && cardIdNum < 35000) isAllowed = true;
+					}
+					if (!isAllowed) continue;
+				}
+				
+				neutralIce.push(parseInt(cardId));
+			}
+			
+			return neutralIce;
+		}
+		
+		// Find all faction (non-neutral) ice from allowed sets
+		function findFactionIce(allowedSets) {
+			var factionIce = [];
+			
+			for (var cardId in cardSet) {
+				var card = cardSet[cardId];
+				if (!card) continue;
+				if (card.cardType !== 'ice') continue;
+				if (card.player !== corp) continue;
+				if (card.faction === 'Neutral') continue; // Exclude neutral ice
+				
+				// Check if card is from an allowed set
+				if (allowedSets && allowedSets.length > 0) {
+					var cardIdNum = parseInt(cardId);
+					var isAllowed = false;
+					for (var i = 0; i < allowedSets.length; i++) {
+						var setCode = allowedSets[i];
+						// Determine card ID range for each set
+						// sg (System Gateway): 30000-30999
+						// su21 (System Update 2021): 31000-31999
+						// ms (Midnight Sun): 33000-33999
+						// el (Elevation): 34000-34999
+						if (setCode === 'sg' && cardIdNum >= 30000 && cardIdNum < 31000) isAllowed = true;
+						else if (setCode === 'su21' && cardIdNum >= 31000 && cardIdNum < 32000) isAllowed = true;
+						else if (setCode === 'ms' && cardIdNum >= 33000 && cardIdNum < 34000) isAllowed = true;
+						else if (setCode === 'el' && cardIdNum >= 34000 && cardIdNum < 35000) isAllowed = true;
+					}
+					if (!isAllowed) continue;
+				}
+				
+				factionIce.push(parseInt(cardId));
+			}
+			
+			return factionIce;
+		}
+		
+		// Apply perk 2: Pre-Installed Neutral Ice
+		function applyPerk2_PreInstalledNeutralIce() {
+			var gauntletState = getGauntletState();
+			var allowedSets = gauntletState ? gauntletState.allowedSets : [];
+			
+			// Find all neutral ice from allowed sets
+			var neutralIceIds = findNeutralIce(allowedSets);
+			if (neutralIceIds.length === 0) {
+				console.log('Perk 2: No neutral ice found in allowed sets');
+				return;
+			}
+			
+			// Pick a random neutral ice
+			var randomIceId = neutralIceIds[Math.floor(Math.random() * neutralIceIds.length)];
+			
+			// Use InstanceCard to properly create the card (this sets isCard, setNumber, cardDefinition, etc.)
+			var iceCard = InstanceCard(
+				randomIceId,
+				cardBackTexturesCorp,
+				glowTextures,
+				strengthTextures
+			);
+			
+			if (!iceCard) {
+				console.log('Perk 2: Failed to create ice card');
+				return;
+			}
+			
+			// Pick a random central server (HQ, R&D, Archives)
+			var centralServers = [corp.HQ, corp.RnD, corp.archives];
+			var targetServer = centralServers[Math.floor(Math.random() * centralServers.length)];
+			
+			// Install the ice on the server (facedown, not rezzed)
+			iceCard.cardLocation = targetServer.ice;
+			iceCard.faceUp = false;
+			iceCard.rezzed = false;
+			targetServer.ice.push(iceCard);
+			
+			Log('Perk: ' + iceCard.title + ' pre-installed protecting ' + ServerName(targetServer));
+		}
+		
+		// Apply perk 1: Additional Funds (Corp gets 5 extra credits)
+		function applyPerk1_AdditionalFunds() {
+			Log('Perk: Additional Funds');
+			GainCredits(corp, 5);
+		}
+		
+		// Apply perk 4: Liquidated Assets (Corp gets 10 extra credits)
+		function applyPerk4_LiquidatedAssets() {
+			Log('Perk: Liquidated Assets');
+			GainCredits(corp, 10);
+		}
+		
+		// Apply perk 3: Holdover Directive (Corp starts with a scored 1-point agenda)
+		function applyPerk3_HoldoverDirective() {
+			var agendaId = 10; // Holdover Directive from gauntlet set
+			
+			// Create the agenda card
+			var agendaCard = InstanceCard(
+				agendaId,
+				cardBackTexturesCorp,
+				glowTextures,
+				strengthTextures
+			);
+			
+			if (!agendaCard) {
+				console.log('Perk 3: Failed to create Holdover Directive agenda');
+				return;
+			}
+			
+			// Add directly to corp's score area (no triggers, pre-game)
+			agendaCard.cardLocation = corp.scoreArea;
+			agendaCard.faceUp = true;
+			agendaCard.advancement = 0;
+			corp.scoreArea.push(agendaCard);
+			
+			Log('Perk: Corp starts with ' + agendaCard.title + ' scored');
+		}
+		
+		// Apply perk 6: Subsidiary Gains (Corp starts with a scored 3-point agenda)
+		function applyPerk6_SubsidiaryGains() {
+			var agendaId = 11; // Subsidiary Gains from gauntlet set
+			
+			// Create the agenda card
+			var agendaCard = InstanceCard(
+				agendaId,
+				cardBackTexturesCorp,
+				glowTextures,
+				strengthTextures
+			);
+			
+			if (!agendaCard) {
+				console.log('Perk 6: Failed to create Subsidiary Gains agenda');
+				return;
+			}
+			
+			// Add directly to corp's score area (no triggers, pre-game)
+			agendaCard.cardLocation = corp.scoreArea;
+			agendaCard.faceUp = true;
+			agendaCard.advancement = 0;
+			corp.scoreArea.push(agendaCard);
+			
+			Log('Perk: Corp starts with ' + agendaCard.title + ' scored');
+		}
+		
+		// Apply perk 5: Pre-Installed Faction Ice
+		function applyPerk5_PreInstalledFactionIce() {
+			var gauntletState = getGauntletState();
+			var allowedSets = gauntletState ? gauntletState.allowedSets : [];
+			
+			// Find all faction ice from allowed sets
+			var factionIceIds = findFactionIce(allowedSets);
+			if (factionIceIds.length === 0) {
+				console.log('Perk 5: No faction ice found in allowed sets');
+				return;
+			}
+			
+			// Pick a random faction ice
+			var randomIceId = factionIceIds[Math.floor(Math.random() * factionIceIds.length)];
+			
+			// Use InstanceCard to properly create the card
+			var iceCard = InstanceCard(
+				randomIceId,
+				cardBackTexturesCorp,
+				glowTextures,
+				strengthTextures
+			);
+			
+			if (!iceCard) {
+				console.log('Perk 5: Failed to create ice card');
+				return;
+			}
+			
+			// Pick a random central server (HQ, R&D, Archives)
+			var centralServers = [corp.HQ, corp.RnD, corp.archives];
+			var targetServer = centralServers[Math.floor(Math.random() * centralServers.length)];
+			
+			// Install the ice on the server in outermost position (facedown, not rezzed)
+			iceCard.cardLocation = targetServer.ice;
+			iceCard.faceUp = false;
+			iceCard.rezzed = false;
+			targetServer.ice.push(iceCard);
+			
+			Log('Perk: ' + iceCard.title + ' pre-installed protecting ' + ServerName(targetServer));
+		}
+		
+		// Apply all active perks (skips disabled perks 7+)
+		function applyGauntletPerks() {
+			var activePerks = getActivePerks();
+			if (activePerks.length === 0) return;
+			
+			console.log('Applying gauntlet perks:', activePerks);
+			
+			for (var i = 0; i < activePerks.length; i++) {
+				var perk = activePerks[i];
+				
+				// Skip disabled perks (7+)
+				if (perk > 6) {
+					console.log('Skipping disabled perk:', perk);
+					continue;
+				}
+				
+				switch (perk) {
+					case 1:
+						applyPerk1_AdditionalFunds();
+						break;
+					case 2:
+						applyPerk2_PreInstalledNeutralIce();
+						break;
+					case 3:
+						applyPerk3_HoldoverDirective();
+						break;
+					case 4:
+						applyPerk4_LiquidatedAssets();
+						break;
+					case 5:
+						applyPerk5_PreInstalledFactionIce();
+						break;
+					case 6:
+						applyPerk6_SubsidiaryGains();
+						break;
+					default:
+						console.log('Unknown perk:', perk);
+				}
+			}
+		}
+		</script>
+	</head>
+
+	<body id="body" onload="Init();">
+		<script>
+		// Apply CRT setting immediately to avoid flash of effects
+		(function(){try{var s=localStorage.getItem('chiriboga-settings');if(s){var p=JSON.parse(s);if(p.crtEffects===false)document.body.classList.add('no-crt');}}catch(e){}})();
+		function toggleCrtFromMenu(enabled){
+			if(enabled){document.body.classList.remove('no-crt');}else{document.body.classList.add('no-crt');}
+			try{var s=localStorage.getItem('chiriboga-settings');var p=s?JSON.parse(s):{};p.crtEffects=enabled;localStorage.setItem('chiriboga-settings',JSON.stringify(p));}catch(e){}
+		}
+		document.addEventListener('DOMContentLoaded',function(){
+			try{var s=localStorage.getItem('chiriboga-settings');if(s){var p=JSON.parse(s);var cb=document.getElementById('crt-toggle');if(cb)cb.checked=(p.crtEffects!==false);}}catch(e){}
+		});
+		</script>
+		<div id="contentcontainer" class="content">
+			<div class="netrunner-bg-watermark"></div> <!-- default watermark text, will be replaced -->
+			<!-- ...existing code... -->
+			<div id="crt-overlay"></div>
+			<div id="output"></div>
+			<form id="cmdform">
+				<input type="submit" value="Submit">
+				<span id="turnphase"></span>
+				<input id="command" type="text" value="">
+			</form>
+		</div>
+	<div id="menubar">
+		<button class="menu-trigger" onclick="$('#menu').css('display','flex'); $('.fullscreen-button').show();">MENU</button>
+		<button class="deck-info-button" onclick="ShowDeckInfo(); $('#help-modal').css('display','flex');"></button>
+		<button class="rulebook-button" onclick="window.open('https://nullsignal.games/players/learn-to-play/', '_blank');"></button>
+		<button class="debug-menu-button" style="display:none; margin-left:6px;" onclick="debugPopulateCardDropdown(); $('#debug-modal').css('display','flex');">
+			<img src="images/debug.svg" alt="Debug" class="icon" style="width:32px;height:32px;vertical-align:middle;" />
+		</button>
+	</div>
+	<div id="header"></div>
+	<button class="fullscreen-button" onclick="document.getElementById('body').requestFullscreen({ navigationUI: 'hide' });"></button>
+		<div id="fps"></div>
+		<div id="footer"></div>
+		<div id="modal" class="modal">
+			<div id="modalcontent" class="modal-content"></div>
+		</div>
+		<div id="history-wrapper">
+			<div id="history"></div>
+		</div>
+		<div id="loading" class="modal" style="display:flex;">
+			<div class="modal-content-inactive"><h1 id="loading-text">DECKBUILDING...</h1></div>
+		</div>
+		<div id="menu" class="modal">
+			<div id="menucontent" class="solo-menu">
+				<span id="menu-close" class="menu-close" onclick="$('#menu').css('display','none');">✕</span>
+				<div class="solo-logo">
+					<h1 class="logo-text">NETRUNNER</h1>
+					<div class="subtitle-line"><span class="subtitle-text">$0LØ MOÐ3</span></div>
+				</div>
+				<div class="menu-options">
+					<button id="exittomenu" onclick="window.location.href='index.php';" class="button">EXIT TO MAIN MENU</button>
+					<button onclick="DownloadCapturedLog();" class="button">DOWNLOAD DEBUG LOG</button>
+					<select id="rewind-select" disabled class="button">
+						<option value="">UNDO</option>
+					</select>
+				</div>
+				   <div class="toggle-options">
+					   <div class="toggle-grid">
+						   <label class="toggle-item"><input type="checkbox" id="narration"> Narrate AI</label>
+					   <label class="toggle-item"><input type="checkbox" id="largerhistory"> Larger history</label>
+					   <label class="toggle-item"><input type="checkbox" id="debugmenu-toggle"> Debug Menu</label>
+				   <label class="toggle-item"><input type="checkbox" id="crt-toggle" onchange="toggleCrtFromMenu(this.checked)"> CRT Effects</label>
+					   <div class="toggle-separator"></div>
+				   <div class="toggle-item" style="display:flex;align-items:center;gap:12px;justify-content:center;grid-column:1/-1;">
+						   <span style="min-width:50px;color:var(--crt-green-muted);">SPEED:</span>
+						   <label style="display:flex;align-items:center;gap:4px;margin:0;">
+							   <input type="checkbox" id="speed-1" onchange="debugSetSpeedPreset(1000)">
+							   <span style="width:12px;text-align:center;color:var(--crt-green-muted);">1</span>
+						   </label>
+						   <label style="display:flex;align-items:center;gap:4px;margin:0;">
+							   <input type="checkbox" id="speed-2" checked onchange="debugSetSpeedPreset(350)">
+							   <span style="width:12px;text-align:center;color:var(--crt-green-muted);">2</span>
+						   </label>
+						   <label style="display:flex;align-items:center;gap:4px;margin:0;">
+							   <input type="checkbox" id="speed-3" onchange="debugSetSpeedPreset(100)">
+							   <span style="width:12px;text-align:center;color:var(--crt-green-muted);">3</span>
+						   </label>
+					   </div>
+				   </div>
+				   </div>
+			</div>
+		</div>
+		<div id="help-modal" class="modal">
+			<div class="solo-menu">
+				<span class="menu-close" onclick="$('#help-modal').css('display','none');">✕</span>
+				<div class="solo-logo">
+					<h1 class="logo-text">DECK INFO</h1>
+				</div>
+				<div id="help-content" style="color:#33ff33; font-family:monospace; font-size:14px; text-align:left; max-height:400px; overflow-y:auto; padding:20px;">
+					<p>Loading deck information...</p>
+				</div>
+			</div>
+		</div>
+		<div id="debug-modal" class="modal">
+			<div class="solo-menu">
+				<span class="menu-close" onclick="$('#debug-modal').css('display','none');">✕</span>
+				<div class="solo-logo">
+					<h1 class="logo-text">DEBUG MENU</h1>
+				</div>
+				<div class="menu-options">
+					<button class="button" onclick="debugAddClick()">Add a Click</button>
+					<button class="button" onclick="debugAddCredit()">Add a Credit</button>
+					<button class="button" onclick="debugDrawCard()">Draw Another Card</button>
+					<div class="debug-card-group">
+						<label>Add Card to Hand</label>
+						<select id="debug-card-select">
+							<option value="">-- Select a card --</option>
+						</select>
+						<button class="button" onclick="debugAddCardToHand()">Add Selected Card</button>
+					</div>
+					<button class="button" id="debug-view-all-fronts-btn" onclick="debugToggleViewAllFronts()">View All Cards</button>
+					<button class="button" onclick="debugStealScoreAgenda()">Steal/Score Agenda</button>
+					<button class="button" onclick="debugOpponentStealScoreAgenda()">Opponent Steal/Score Agenda</button>
+					<button class="button" onclick="debugWinGame()">Win the Game</button>
+					<button class="button" onclick="debugLoseGame()">Lose the Game</button>
+				</div>
+			</div>
+		</div>
+		<div id="hostile-takeover-modal" class="modal">
+			<div class="solo-menu">
+				<div class="solo-logo">
+					<h1 class="logo-text">HOSTILE TAKEOVER</h1>
+				</div>
+				<div id="hostile-takeover-content">
+					<p>You weakened your last opponent enough for this Corp to buy up its assets and become stronger. It starts with the following perks:</p>
+					<div id="hostile-takeover-perks"></div>
+				</div>
+				<div class="hostile-takeover-buttons">
+					<button class="button" onclick="dismissHostileTakeoverModal();">CONTINUE</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

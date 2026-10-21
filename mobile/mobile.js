@@ -1,0 +1,91 @@
+// Phone/PWA tweaks layered on top of the Chiriboga pages.
+// Loaded at the end of <head> on every page, after the engine's own scripts.
+(function () {
+  var html = document.documentElement;
+  var page = (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "") || "index";
+  html.classList.add("anra", "anra-" + page);
+  if (matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches) {
+    html.classList.add("anra-installed");
+  }
+
+  if ("serviceWorker" in navigator) {
+    var base = document.currentScript ? new URL("../", document.currentScript.src) : new URL("./", location);
+    navigator.serviceWorker.register(new URL("sw.js", base)).catch(function (e) {
+      console.warn("Service worker registration failed", e);
+    });
+  }
+
+  // Render the PixiJS board at the phone's real pixel density (capped for
+  // performance) instead of 1x, which looks blurry on a Pixel screen. The
+  // engine treats renderer.width/height as layout units, so keep those in
+  // CSS pixels.
+  if (window.PIXI && PIXI.Application) {
+    var Original = PIXI.Application;
+    var resolution = Math.min(window.devicePixelRatio || 1, 2);
+    var Patched = function (width, height, options) {
+      if (typeof width === "object") return new Original(width);
+      options = Object.assign({ resolution: resolution }, options || {});
+      var app = new Original(width, height, options);
+      if (app.renderer.resolution !== 1) {
+        Object.defineProperty(app.renderer, "width", {
+          get: function () { return this.screen.width; },
+        });
+        Object.defineProperty(app.renderer, "height", {
+          get: function () { return this.screen.height; },
+        });
+      }
+      return app;
+    };
+    Patched.prototype = Original.prototype;
+    PIXI.Application = Patched;
+  }
+
+  if (page === "engine") {
+    // Long-press is the engine's "zoom card" gesture; stop Chrome's context
+    // menu and text selection callouts from competing with it.
+    document.addEventListener("contextmenu", function (e) {
+      if (e.target && e.target.tagName === "CANVAS") e.preventDefault();
+    });
+    // The board is laid out for landscape. Locking only works fullscreen or
+    // when installed, and must follow a user gesture.
+    var tryLock = function () {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock("landscape").catch(function () {});
+      }
+    };
+    document.addEventListener("pointerdown", tryLock, { once: true });
+  }
+
+  if (page === "index") {
+    document.addEventListener("DOMContentLoaded", addMenuEntries);
+  }
+
+  function addMenuEntries() {
+    var setupUrl = "mobile/setup.html";
+    document.querySelectorAll(".menu-buttons, #menu-buttons").forEach(function (menu) {
+      if (menu.querySelector(".anra-images-entry")) return;
+      var item = document.createElement("div");
+      item.className = "menu-item anra-images-entry";
+      item.textContent = "CARD IMAGES";
+      item.addEventListener("click", function () { location.href = setupUrl; });
+      menu.appendChild(item);
+    });
+
+    if (!("caches" in window)) return;
+    caches.open("anra-images").then(function (c) { return c.keys(); }).then(function (keys) {
+      var dismissed = false;
+      try { dismissed = localStorage.getItem("anra-images-hint") === "dismissed"; } catch (e) {}
+      if (keys.length || dismissed) return;
+      var hint = document.createElement("div");
+      hint.className = "anra-hint";
+      hint.innerHTML =
+        '<span>Playing with text-only cards. Import the card art pack for the full look.</span>' +
+        '<a href="' + setupUrl + '">IMPORT</a><button aria-label="Dismiss">✕</button>';
+      hint.querySelector("button").addEventListener("click", function () {
+        try { localStorage.setItem("anra-images-hint", "dismissed"); } catch (e) {}
+        hint.remove();
+      });
+      document.body.appendChild(hint);
+    });
+  }
+})();

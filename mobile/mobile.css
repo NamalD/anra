@@ -1,0 +1,78 @@
+/* Phone/PWA tweaks layered on top of the Chiriboga styles. */
+
+html.anra {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* ---- Game board ---- */
+
+html.anra-engine,
+html.anra-engine body {
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html.anra-engine canvas {
+  touch-action: none;
+}
+
+/* The board is designed for landscape; ask to rotate in portrait. */
+@media (orientation: portrait) and (max-width: 900px) {
+  html.anra-engine body::after {
+    content: "⟲\A Rotate your phone to landscape";
+    white-space: pre;
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font: bold 20px/1.8 monospace;
+    color: #33ff33;
+    background: #0b1114;
+  }
+}
+
+/* Installed app already has an immersive window. */
+html.anra-installed .fullscreen-button {
+  display: none !important;
+}
+
+/* ---- Main menu ---- */
+
+.anra-hint {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #33ff33;
+  background: rgba(5, 12, 8, 0.95);
+  color: #b9ffb9;
+  font: 13px/1.4 monospace;
+}
+.anra-hint span {
+  flex: 1;
+}
+.anra-hint a {
+  color: #0b1114;
+  background: #33ff33;
+  padding: 8px 12px;
+  text-decoration: none;
+  font-weight: bold;
+}
+.anra-hint button {
+  background: none;
+  border: none;
+  color: #b9ffb9;
+  font-size: 18px;
+  padding: 6px;
+}
