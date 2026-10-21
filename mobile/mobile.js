@@ -46,14 +46,27 @@
     document.addEventListener("contextmenu", function (e) {
       if (e.target && e.target.tagName === "CANVAS") e.preventDefault();
     });
-    // The board is laid out for landscape. Locking only works fullscreen or
-    // when installed, and must follow a user gesture.
-    var tryLock = function () {
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock("landscape").catch(function () {});
-      }
+
+    // A light tap of haptic feedback on the game's buttons.
+    document.addEventListener("pointerdown", function (e) {
+      if (!navigator.vibrate || e.pointerType !== "touch") return;
+      if (e.target.closest && e.target.closest("button, .button, .menu-item")) navigator.vibrate(8);
+    });
+
+    // Keep the screen on while a game is open; games are slow-paced and the
+    // phone would otherwise dim mid-turn. The lock drops when the app is
+    // backgrounded, so take it again on return.
+    var wakeLock = null;
+    var keepAwake = function () {
+      if (!("wakeLock" in navigator) || document.visibilityState !== "visible" || wakeLock) return;
+      navigator.wakeLock.request("screen").then(function (lock) {
+        wakeLock = lock;
+        lock.addEventListener("release", function () { wakeLock = null; });
+      }).catch(function () {});
     };
-    document.addEventListener("pointerdown", tryLock, { once: true });
+    document.addEventListener("visibilitychange", keepAwake);
+    document.addEventListener("pointerdown", keepAwake, { once: true });
+    keepAwake();
   }
 
   if (page === "index") {

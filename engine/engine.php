@@ -35,7 +35,7 @@
 		<script>var accessibilityMode="default";</script>
 		<?php
 		echo '<link rel="stylesheet" type="text/css" href="style.css?' . filemtime('style.css') . '" />';
-		$jsfiles = array('init','phase', 'command', 'checks', 'mechanics', 'utility', 'config');
+		$jsfiles = array('init', 'portrait', 'phase', 'command', 'checks', 'mechanics', 'utility', 'config');
 
 		// =================================================================
 		// ENGINE SETS - Dynamically loaded from setRegistry in config.js

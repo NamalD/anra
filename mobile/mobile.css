@@ -19,27 +19,62 @@ html.anra-engine canvas {
   touch-action: none;
 }
 
-/* The board is designed for landscape; ask to rotate in portrait. */
-@media (orientation: portrait) and (max-width: 900px) {
-  html.anra-engine body::after {
-    content: "⟲\A Rotate your phone to landscape";
-    white-space: pre;
-    position: fixed;
-    inset: 0;
-    z-index: 100000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font: bold 20px/1.8 monospace;
-    color: #33ff33;
-    background: #0b1114;
+/* Portrait: the engine lays the board out in rows (engine/portrait.js) and
+   draws the HUD at full size, so give it phone-sized proportions. */
+@media (orientation: portrait) {
+  html.anra-engine #menubar {
+    height: 52px;
+    padding: 4px;
+    gap: 4px;
+  }
+  html.anra-engine #menubar .menu-trigger {
+    width: 58px;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  html.anra-engine #header {
+    height: 52px;
+    width: calc(100vw - 186px) !important;
+    padding: 4px 56px 4px 12px; /* clear of the fullscreen button */
+    font-size: 11px;
+    line-height: 1.15;
+  }
+  html.anra-engine #footer {
+    width: 100vw !important;
+    height: auto;
+    min-height: 64px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    border-radius: 14px 14px 0 0;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  html.anra-engine #footer .button,
+  html.anra-engine #footer button {
+    min-height: 46px;
+    font-size: 15px;
+  }
+  html.anra-engine #history-wrapper,
+  html.anra-engine #history {
+    width: 42px !important;
+  }
+  html.anra-engine #history-wrapper {
+    top: 52px !important;
+  }
+  html.anra-engine .historyentry {
+    width: 40px !important;
+    height: 40px !important;
+    background-size: 100% 100% !important;
   }
 }
 
 /* Installed app already has an immersive window. */
 html.anra-installed .fullscreen-button {
   display: none !important;
+}
+@media (orientation: portrait) {
+  html.anra-installed.anra-engine #header {
+    padding-right: 8px;
+  }
 }
 
 /* ---- Main menu ---- */

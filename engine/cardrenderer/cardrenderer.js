@@ -1764,6 +1764,7 @@ var CardRenderer = {
           largestServerX =
             corp.remoteServers[corp.remoteServers.length - 1].xEnd;
         this.newRemoteIndicator.x = largestServerX + 150; //arbitrary number
+        if (corp.newRemoteSlot) this.newRemoteIndicator.x = corp.newRemoteSlot.xCentre; //portrait layout
 
         //show server selector highlight if relevant
         this.serverSelector.visible = false;
@@ -1797,6 +1798,13 @@ var CardRenderer = {
                     true
                   ); //first true ignores remote numbers, second removes indefinite article
                   this.serverText.x = this.serverSelector.x;
+                  //portrait layout: servers are in rows of different heights
+                  var selected = validOptions[i].server == null ? corp.newRemoteSlot : validOptions[i].server;
+                  if (selected && typeof selected.yCentre !== "undefined") {
+                    this.serverSelector.y = selected.yCentre;
+                    this.serverSelector.scale.y = selected.selectorScaleY;
+                    this.serverText.y = selected.yCentre + (viewingPlayer == corp ? 111 : 105);
+                  }
                 }
               }
             }
