@@ -1,9 +1,10 @@
 // Service worker: precaches the app for offline play and serves card art.
 //
-// Card art is not distributed with this app. Images the player imports
-// (see mobile/setup.html) live in IMAGE_CACHE. Anything missing from there
-// is tried on the network, and failing that a placeholder is drawn: text
-// cards built from carddata.json, plain card backs, and simple UI glyphs.
+// Card art is not distributed with this app. Images live in IMAGE_CACHE,
+// filled either by the player importing the art pack (mobile/setup.html) or
+// by fetching each card's art from NetrunnerDB the first time it's needed.
+// Anything still missing is drawn as a placeholder: text cards built from
+// carddata.json, plain card backs, and simple UI glyphs.
 
 const VERSION = "__VERSION__";
 const PRECACHE = __PRECACHE__;
@@ -16,10 +17,14 @@ self.addEventListener("install", (event) => {
     caches
       .open(APP_CACHE)
       .then((cache) =>
-        // One bad file shouldn't stop the whole app from installing.
+        // One bad file shouldn't stop the whole app from installing. Bypass
+        // the HTTP cache (GitHub Pages allows 10 minutes), or a new version
+        // can be filled with the previous version's files.
         Promise.all(
           PRECACHE.map((p) =>
-            cache.add(new URL(p, BASE)).catch((e) => console.warn("precache failed", p, e)),
+            cache
+              .add(new Request(new URL(p, BASE), { cache: "reload" }))
+              .catch((e) => console.warn("precache failed", p, e)),
           ),
         ),
       )
@@ -76,9 +81,39 @@ async function serveImage(rel) {
     const type = res.headers.get("content-type") || "";
     if (res.ok && type.startsWith("image/")) return res;
   } catch (e) {
-    // offline; fall through to a placeholder
+    // offline; fall through
+  }
+  const code = cardCode(rel);
+  if (code) {
+    const art = await fetchCardArt(code);
+    if (art) {
+      const cache = await caches.open(IMAGE_CACHE);
+      await cache.put(key, art.clone());
+      return art;
+    }
   }
   return placeholder(rel);
+}
+
+// "images/01001.png" or "images/hires/01001.jpg" -> "01001"
+function cardCode(rel) {
+  const m = /^images\/(?:hires\/)?(\d{5})\.(?:png|jpe?g)$/i.exec(rel);
+  return m ? m[1] : null;
+}
+
+// The card's art from NetrunnerDB (the source carddata.json names). Fetched
+// with CORS so the image can be used as a WebGL texture; if that's refused
+// or we're offline, the caller falls back to a text card.
+async function fetchCardArt(code) {
+  try {
+    const { template } = await cards();
+    if (!template) return null;
+    const res = await fetch(template.replace("{code}", code), { mode: "cors", credentials: "omit" });
+    const type = res.headers.get("content-type") || "";
+    return res.ok && type.startsWith("image/") ? res : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -103,11 +138,13 @@ const FACTION_COLOURS = {
 let cardIndex = null;
 async function cards() {
   if (cardIndex) return cardIndex;
-  const res = await caches.match(new URL("carddata/carddata.json", BASE), {
-    cacheName: APP_CACHE,
-  }) || (await fetch(new URL("carddata/carddata.json", BASE)));
+  const url = new URL("carddata/carddata.json", BASE);
+  const res = (await caches.match(url, { cacheName: APP_CACHE })) || (await fetch(url));
   const json = await res.json();
-  cardIndex = new Map(json.data.map((c) => [c.code, c]));
+  cardIndex = {
+    byCode: new Map(json.data.map((c) => [c.code, c])),
+    template: json.imageUrlTemplate,
+  };
   return cardIndex;
 }
 
@@ -115,7 +152,7 @@ async function placeholder(rel) {
   const name = rel.split("/").pop().replace(/\.[a-z]+$/i, "");
   let svg;
   if (/^\d{5}$/.test(name)) {
-    const card = (await cards()).get(name);
+    const card = (await cards()).byCode.get(name);
     svg = card ? cardSvg(card) : blankCardSvg(name);
   } else if (/^(corp|runner)_back$/i.test(name)) {
     svg = backSvg(/^corp/i.test(name));
@@ -257,6 +294,26 @@ function glyphSvg(name) {
   if (n.includes("known")) return disc("#2a8a5a", "👁");
   if (n.includes("broken")) return disc("#555", "✕");
   if (n.includes("subroutine")) return sq(32, `<path d="M8 16h40l-10-10M48 16l-10 10" transform="scale(0.6)" stroke="#fff" stroke-width="6" fill="none"/>`);
+  // Highlights drawn around selectable cards, at the same 0.5 scale as cards.
+  if (n === "glow_white" || n === "glow_white_cropped" || n === "glow_white_ice") {
+    const pad = n === "glow_white" ? 30 : 16;
+    const gw = W + pad * 2;
+    const gh = H + pad * 2;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${gw}" height="${gh}" viewBox="0 0 ${gw} ${gh}">` +
+      `<defs><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${pad / 3}"/></filter></defs>` +
+      `<rect x="${pad * 0.6}" y="${pad * 0.6}" width="${gw - pad * 1.2}" height="${gh - pad * 1.2}" rx="20" fill="none" stroke="#fff" stroke-width="${pad * 0.8}" filter="url(#b)"/>` +
+      `<rect x="${pad * 0.8}" y="${pad * 0.8}" width="${gw - pad * 1.6}" height="${gh - pad * 1.6}" rx="18" fill="none" stroke="#fff" stroke-width="5"/>` +
+      `</svg>`
+    );
+  }
+  if (n.includes("glow_outline")) {
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+      `<rect x="6" y="6" width="${W - 12}" height="${H - 12}" rx="16" fill="none" stroke="#fff" stroke-width="8" stroke-dasharray="28 16"/>` +
+      `</svg>`
+    );
+  }
   if (n.includes("glow") || n.includes("particle")) {
     return sq(64, `<defs><radialGradient id="g"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><circle cx="32" cy="32" r="32" fill="url(#g)"/>`);
   }

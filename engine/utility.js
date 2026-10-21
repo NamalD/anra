@@ -1004,8 +1004,17 @@ function OptionsAreOnlyUniqueSubroutines() {
 function MouseIsOverServer(server) {
   var mousePos = cardRenderer.MousePosition();
   var y = mousePos.y;
-  if (y < pixi_playY) return false;
   var x = mousePos.x;
+  if (corp.newRemoteSlot) {
+    //portrait layout: servers are in rows, so check both coordinates
+    if (server == null) {
+      var slot = corp.newRemoteSlot;
+      return x > slot.xStart && x < slot.xEnd && y > slot.yStart && y < slot.yEnd;
+    }
+    if (server == corp.archives) return x < corp.RnD.xStart && InServerRow(server, y);
+    return x > server.xStart && x < server.xEnd && InServerRow(server, y);
+  }
+  if (y < pixi_playY) return false;
 
   if (x == 0) {
     if (y == 0) return false; //prevent glitch on touch devices
@@ -4271,4 +4280,4 @@ function FindCardDefWithMostSimilarTitle(str) {
 	}
   }
   return cardSet[mostSimilarIndex];
-}
+}

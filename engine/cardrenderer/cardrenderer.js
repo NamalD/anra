@@ -1409,6 +1409,29 @@ var CardRenderer = {
 
     //click callback (uses this.sprite as context)
     OnClick() {
+      //a tap (as opposed to a drag) on a card the viewer can see may open the card reader below
+      var tapDistance = {
+        x: pixi_mousePosition.x - pixi_mouseStart.x,
+        y: pixi_mousePosition.y - pixi_mouseStart.y,
+      };
+      var wasTap = tapDistance.x * tapDistance.x + tapDistance.y * tapDistance.y < 1000;
+      var renderer = this.card;
+      var openReader = function () {
+        if (!wasTap || !(renderer.faceUp || renderer.canView) || typeof ShowCardReader !== "function") return;
+        //this tap is choosing a server (resolved by the stage's pointerup handler after this)
+        if (OptionsAreOnlyUniqueServers()) {
+          for (var i = 0; i < validOptions.length; i++) {
+            if (MouseIsOverServer(validOptions[i].server)) return;
+          }
+        }
+        ShowCardReader(renderer.card);
+      };
+      if (this.card.availability == 2 && wasTap) {
+        //tapping a card that can be dragged doesn't play it, so just show it
+        this.pointerout(); //clear highlight
+        openReader();
+        return;
+      }
       if (this.card.availability == 2) {
         //i.e. drag and drop to choose
         if (pixi_playThreshold(this.card)) {
@@ -1445,8 +1468,10 @@ var CardRenderer = {
 		  cardRenderer.storedView = previousViewingGrid; //so any existing view can restored when this is closed          
 		  viewingPile = this.card.card.cardLocation;
           Render(); //force the visual change
+          return;
         }
       }
+      openReader();
     }
 
     //in world transform, but relative to anchor
@@ -1764,6 +1789,7 @@ var CardRenderer = {
           largestServerX =
             corp.remoteServers[corp.remoteServers.length - 1].xEnd;
         this.newRemoteIndicator.x = largestServerX + 150; //arbitrary number
+        if (corp.newRemoteSlot) this.newRemoteIndicator.x = corp.newRemoteSlot.xCentre; //portrait layout
 
         //show server selector highlight if relevant
         this.serverSelector.visible = false;
@@ -1797,6 +1823,13 @@ var CardRenderer = {
                     true
                   ); //first true ignores remote numbers, second removes indefinite article
                   this.serverText.x = this.serverSelector.x;
+                  //portrait layout: servers are in rows of different heights
+                  var selected = validOptions[i].server == null ? corp.newRemoteSlot : validOptions[i].server;
+                  if (selected && typeof selected.yCentre !== "undefined") {
+                    this.serverSelector.y = selected.yCentre;
+                    this.serverSelector.scale.y = selected.selectorScaleY;
+                    this.serverText.y = selected.yCentre + (viewingPlayer == corp ? 111 : 105);
+                  }
                 }
               }
             }
@@ -2115,6 +2148,15 @@ var CardRenderer = {
 			this.counters.splice(i,1);
 			i--;
 		}
+      }
+      //counters were just raised to the top, so put any zoomed card back above them
+      var zoomedSprites = this.app.stage.children.filter(function (child) {
+        return child.card && child.card.zoomed;
+      });
+      for (var i = 0; i < zoomedSprites.length; i++) {
+        var zoomedCard = zoomedSprites[i].card;
+        if (zoomedCard.glowSprite.parent) zoomedCard.glowSprite.parent.addChild(zoomedCard.glowSprite);
+        zoomedSprites[i].parent.addChild(zoomedSprites[i]);
       }
     }
 

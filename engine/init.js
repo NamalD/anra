@@ -1024,333 +1024,371 @@ function Render() {
   );
 
   var arbitraryHistorySpacer = 55;
-  var arbitraryMenubarSpacer = 115;
+  ResetServerGeometry();
+  var portraitLayout = IsPortraitLayout();
+  var portraitResult = null;
+  if (portraitLayout) {
+    portraitResult = ApplyPortraitLayout({
+      hostingX: hostingX,
+      resources: resourcesCascade,
+      hardware: hardwareCascade,
+      programs: programsCascade,
+      heap: heapCascade,
+      stack: stackCascade,
+      grip: gripCascade,
+      identity: identityCascade,
+      stolen: stolenCascade,
+      runnerResolving: runnerResolvingCascade,
+      corpHand: corpHandCascade,
+      scored: scoredCascade,
+      archivesRoot: archivesRootCascade,
+      archivesCards: archivesCardsCascade,
+      archivesIce: archivesIceCascade,
+      archivesWidth: archivesWidth,
+      RnDRoot: RnDRootCascade,
+      RnDCards: RnDCardsCascade,
+      RnDIce: RnDIceCascade,
+      RnDWidth: RnDWidth,
+      HQRoot: HQRootCascade,
+      HQCards: HQCardsCascade,
+      HQIce: HQIceCascade,
+      HQWidth: HQWidth,
+      remoteCascades: remoteCascades,
+      corpResolving: corpResolvingCascade,
+    });
+    var w = portraitResult.w;
+    var h = portraitResult.h;
+    var attackedServerGlow = portraitResult.attackedServerGlow;
+  } else {
+    pixi_playY = 180;
+    var arbitraryMenubarSpacer = 115;
 
-  var serverSeparationX = 40;
-  var serverStartX = scoredCascade.width + serverSeparationX;
-  if (viewingPlayer == corp) serverStartX += arbitraryHistorySpacer;
+    var serverSeparationX = 40;
+    var serverStartX = scoredCascade.width + serverSeparationX;
+    if (viewingPlayer == corp) serverStartX += arbitraryHistorySpacer;
 
-  //scale field to match approximate height (do this BEFORE any apply, so that cards are rendered in the new field)
-  var w = window.innerWidth;
-  var h = window.innerHeight;
-  cardRenderer.app.view.style.width = w + "px";
-  cardRenderer.app.view.style.height = h + "px";
-  cardRenderer.app.stage.pivot.x = w * 0.5;
-  cardRenderer.app.stage.pivot.y = h * 0.5;
-  cardRenderer.app.stage.x = w * 0.5;
-  cardRenderer.app.stage.y = h * 0.5;
-  //zoom the field out if there is too much on it
-  fieldZoom = 1.0;
-  var interfaceScale = 1.0;
-  //calculate field height from total height of runner + spacer + corp
-  var totalFieldHeight = runnerLargestHeight + largestServerHeight; //there was also a -150 but that leads to overlap between tall server and certain rig heights
-  if (totalFieldHeight < 700) totalFieldHeight = 700; //this is approximately 1 layer of ice
-  var fieldHeightRatio = totalFieldHeight / h;
-  //calculate field width from corp field (assumes this will be wider than runner field)
-  var totalFieldWidth =
-    scoredCascade.width +
-    serverSeparationX * (4 + corp.remoteServers.length) +
-    totalServersWidth;
-  if (totalFieldWidth < 1000) totalFieldWidth = 1000; //this is approximately 1 remote with ice
-  var fieldWidthRatio = (totalFieldWidth + arbitraryHistorySpacer) / w;
-  var largestRatio = Math.max(fieldHeightRatio, fieldWidthRatio);
-  if (largestRatio > 1.0) {
-    fieldZoom = largestRatio;
-    interfaceScale = 1.0 / fieldZoom;
-  }
-  var oldW = w;
-  w *= fieldZoom;
-  var oldH = h;
-  h *= fieldZoom;
-  cardRenderer.app.renderer.resize(w, h);
-  //correct stage positioning after zoom
-  if (viewingPlayer == corp) {
-    cardRenderer.app.stage.x += w - oldW;
-    cardRenderer.app.stage.y += h - oldH;
-  }
-  w -= arbitraryHistorySpacer; //leave space for history sidebar
-  if (viewingPlayer == corp) {
-	cardRenderer.tutorialText.x = w + 45;
-	cardRenderer.tutorialText.y = 0.5*h;//170;
-	cardRenderer.tutorialText.rotation = Math.PI;
-  }
-  else {
-	cardRenderer.tutorialText.x = 15;
-	cardRenderer.tutorialText.y = 0.5*h + 70;
-  }
-  //scale interface to match game zoom
-  $("#footer").css("transform-origin", "bottom left");
-  $("#footer").css("transform", "scale(" + interfaceScale + ")");
-  $("#header").css("transform-origin", "top right");
-  $("#header").css("transform", "scale(" + interfaceScale + ")");
-  $("#menubar").css("transform-origin", "top left");
-  $("#menubar").css("transform", "scale(" + interfaceScale + ")");
-  $("#history-wrapper").css("width", interfaceScale * 56 + "px");
-  $("#history-wrapper").css("top", interfaceScale * 65 + "px");
+    //scale field to match approximate height (do this BEFORE any apply, so that cards are rendered in the new field)
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    cardRenderer.app.view.style.width = w + "px";
+    cardRenderer.app.view.style.height = h + "px";
+    cardRenderer.app.stage.pivot.x = w * 0.5;
+    cardRenderer.app.stage.pivot.y = h * 0.5;
+    cardRenderer.app.stage.x = w * 0.5;
+    cardRenderer.app.stage.y = h * 0.5;
+    //zoom the field out if there is too much on it
+    fieldZoom = 1.0;
+    var interfaceScale = 1.0;
+    //calculate field height from total height of runner + spacer + corp
+    var totalFieldHeight = runnerLargestHeight + largestServerHeight; //there was also a -150 but that leads to overlap between tall server and certain rig heights
+    if (totalFieldHeight < 700) totalFieldHeight = 700; //this is approximately 1 layer of ice
+    var fieldHeightRatio = totalFieldHeight / h;
+    //calculate field width from corp field (assumes this will be wider than runner field)
+    var totalFieldWidth =
+      scoredCascade.width +
+      serverSeparationX * (4 + corp.remoteServers.length) +
+      totalServersWidth;
+    if (totalFieldWidth < 1000) totalFieldWidth = 1000; //this is approximately 1 remote with ice
+    var fieldWidthRatio = (totalFieldWidth + arbitraryHistorySpacer) / w;
+    var largestRatio = Math.max(fieldHeightRatio, fieldWidthRatio);
+    if (largestRatio > 1.0) {
+      fieldZoom = largestRatio;
+      interfaceScale = 1.0 / fieldZoom;
+    }
+    var oldW = w;
+    w *= fieldZoom;
+    var oldH = h;
+    h *= fieldZoom;
+    cardRenderer.app.renderer.resize(w, h);
+    //correct stage positioning after zoom
+    if (viewingPlayer == corp) {
+      cardRenderer.app.stage.x += w - oldW;
+      cardRenderer.app.stage.y += h - oldH;
+    }
+    w -= arbitraryHistorySpacer; //leave space for history sidebar
+    if (viewingPlayer == corp) {
+  	cardRenderer.tutorialText.x = w + 45;
+  	cardRenderer.tutorialText.y = 0.5*h;//170;
+  	cardRenderer.tutorialText.rotation = Math.PI;
+    }
+    else {
+  	cardRenderer.tutorialText.x = 15;
+  	cardRenderer.tutorialText.y = 0.5*h + 70;
+    }
+    //scale interface to match game zoom
+    $("#footer").css("transform-origin", "bottom left");
+    $("#footer").css("transform", "scale(" + interfaceScale + ")");
+    $("#header").css("transform-origin", "top right");
+    $("#header").css("transform", "scale(" + interfaceScale + ")");
+    $("#menubar").css("transform-origin", "top left");
+    $("#menubar").css("transform", "scale(" + interfaceScale + ")");
+    $("#history-wrapper").css("width", interfaceScale * 56 + "px");
+    $("#history-wrapper").css("top", interfaceScale * 65 + "px");
   
-  if ($('#largerhistory').prop('checked')) {
-    $("#history-wrapper").css("transform-origin", "top right");
-    $("#history-wrapper").css("transform", "scale(1.5)");
-  }
-  else $("#history-wrapper").css("transform", "scale(1)");
+    if ($('#largerhistory').prop('checked')) {
+      $("#history-wrapper").css("transform-origin", "top right");
+      $("#history-wrapper").css("transform", "scale(1.5)");
+    }
+    else $("#history-wrapper").css("transform", "scale(1)");
   
-  $("#history").css("width", interfaceScale * 56 + "px");
-  $(".historycontents").css("transform-origin", "top left");
-  $(".historycontents").css("transform", "scale(" + interfaceScale + ")");
-  $(".historyentry").css("background-size", "100% 100%");
-  $(".historyentry").css("height", interfaceScale * 50 + "px");
-  $(".historyentry").css("width", interfaceScale * 50 + "px");
-  $(".fullscreen-button").css("transform-origin", "top right");
-  //scale doesn't affect margin so we do that ourselves here
-  $(".fullscreen-button").css("transform", "translate(5px, -10px) scale(" + interfaceScale + ") translate(-5px, 10px)");
-  corpHeaderFooter *= interfaceScale;
-  runnerHeaderFooter *= interfaceScale;
+    $("#history").css("width", interfaceScale * 56 + "px");
+    $(".historycontents").css("transform-origin", "top left");
+    $(".historycontents").css("transform", "scale(" + interfaceScale + ")");
+    $(".historyentry").css("background-size", "100% 100%");
+    $(".historyentry").css("height", interfaceScale * 50 + "px");
+    $(".historyentry").css("width", interfaceScale * 50 + "px");
+    $(".fullscreen-button").css("transform-origin", "top right");
+    //scale doesn't affect margin so we do that ourselves here
+    $(".fullscreen-button").css("transform", "translate(5px, -10px) scale(" + interfaceScale + ") translate(-5px, 10px)");
+    corpHeaderFooter *= interfaceScale;
+    runnerHeaderFooter *= interfaceScale;
 
-  //now apply all the renders
-  //RUNNER
-  var runnerYBottom = -70; //above hand
-  if (viewingPlayer == corp) stolenIdentityOffsetY += 30;
-  var resourceRowHeight = Math.min(
-    -resourcesCascade.height - verticalRowSpacing,
-    0
-  );
-  var hardwareRowHeight = Math.min(
-    -hardwareCascade.height - verticalRowSpacing,
-    0
-  );
-  var rowCentreX =
-    (w -
-      Math.max(
-        stolenCascade.width + identityCascade.width,
-        stackCascade.width + heapCascade.width
-      )) *
-    0.5;
-  programsCascade.Apply(
-    cardRenderer.app,
-    rowCentreX,
-    h + runnerYBottom + resourceRowHeight + hardwareRowHeight,
-    0.5,
-    1,
-    hostingX
-  );
-  hardwareCascade.Apply(
-    cardRenderer.app,
-    rowCentreX,
-    h + runnerYBottom + resourceRowHeight,
-    0.5,
-    1,
-    hostingX
-  );
-  resourcesCascade.Apply(
-    cardRenderer.app,
-    rowCentreX,
-    h + runnerYBottom,
-    0.5,
-    1,
-    hostingX
-  );
-  stolenCascade.Apply(
-    cardRenderer.app,
-    w,
-    h + runnerYBottom + stolenIdentityOffsetY,
-    1,
-    1,
-    hostingX
-  );
-  identityCascade.Apply(
-    cardRenderer.app,
-    w - stolenCascade.width - stolenIdentitySpacing,
-    h + stolenIdentityOffsetY + runnerYBottom,
-    1,
-    1,
-    hostingX
-  );
-  var stackHeapBottom =
-    h +
-    stackHeapSpacingY -
-    Math.max(stolenCascade.height, identityCascade.height) +
-    stolenIdentityOffsetY; //runnerYBottom intentionally not included
-  heapCascade.Apply(cardRenderer.app, w, stackHeapBottom, 1, 1, hostingX);
-  runner.heap.xStart = w - heapCascade.width;
-  runner.heap.xEnd = w;
-  runner.heap.yCards = stackHeapBottom;
-  stackCascade.Apply(
-    cardRenderer.app,
-    w - heapCascade.width - stackHeapSpacingX,
-    stackHeapBottom,
-    1,
-    1,
-    hostingX
-  );
-  runner.stack.xStart =
-    w - heapCascade.width - stackHeapSpacingX - stackCascade.width;
-  runner.stack.xEnd = w - heapCascade.width - stackHeapSpacingX;
-  runner.stack.yCards = stackHeapBottom;
-  //resolving cards and grip are applied along with corp's, farther down
-
-  //CORP
-  //aesthetic improvements to fit more on the screen
-  var corpYTop = 20;
-  if (viewingPlayer == corp) corpYTop = 50;
-  serverCardsHeight -= 80;
-  rootHeight += corpYTop;
-  if (rootHeight > 80) rootHeight -= 80;
-  else if (rootHeight < 100 || viewingPlayer == corp) rootHeight = 100; //leave some space, even if no upgrades, so drawing from deck feels right
-  var attackedServerGlow = { x: 0, y: serverCardsHeight * 0.5 + rootHeight }; //used for rendering glow
-  cardRenderer.archivesIndicator.y = serverCardsHeight * 0.5 + rootHeight; //used for choosing empty archives
-  cardRenderer.newRemoteIndicator.y = serverCardsHeight * 0.5 + rootHeight; //used for choosing new server
-  cardRenderer.serverSelector.y = serverCardsHeight * 0.5 + rootHeight; //highlight to choosing a server
-  cardRenderer.serverSelector.scale.y = largestServerHeight / 44.0; //44 is the height of the particles.png image
-  cardRenderer.serverText.y = 105.0 + cardRenderer.serverSelector.y;
-  if (viewingPlayer == corp) {
-    cardRenderer.serverText.rotation = Math.PI;
-    cardRenderer.serverText.y += 6;
-  }
-
-  scoredCascade.Apply(cardRenderer.app, 0, corpYTop, 0, 0, hostingX);
-  archivesRootCascade.Apply(
-    cardRenderer.app,
-    archivesWidth * 0.5 + serverStartX,
-    corpYTop,
-    0.5,
-    0,
-    hostingX
-  );
-  archivesCardsCascade.Apply(
-    cardRenderer.app,
-    archivesWidth * 0.5 + serverStartX,
-    rootHeight,
-    0.5,
-    0,
-    hostingX,
-    5
-  );
-  archivesIceCascade.Apply(
-    cardRenderer.app,
-    archivesWidth * 0.5 + serverStartX,
-    rootHeight + serverCardsHeight,
-    0.5,
-    0,
-    hostingX
-  );
-  if (attackedServer == corp.archives)
-    attackedServerGlow.x = archivesWidth * 0.5 + serverStartX;
-  corp.archives.xStart = serverStartX;
-  corp.archives.xEnd = serverStartX + archivesWidth;
-  corp.archives.yCards = rootHeight;
-  serverStartX += archivesWidth + serverSeparationX;
-  RnDRootCascade.Apply(
-    cardRenderer.app,
-    RnDWidth * 0.5 + serverStartX,
-    corpYTop,
-    0.5,
-    0,
-    hostingX
-  );
-  RnDCardsCascade.Apply(
-    cardRenderer.app,
-    RnDWidth * 0.5 + serverStartX,
-    rootHeight,
-    0.5,
-    0,
-    hostingX
-  );
-  RnDIceCascade.Apply(
-    cardRenderer.app,
-    RnDWidth * 0.5 + serverStartX,
-    rootHeight + serverCardsHeight,
-    0.5,
-    0,
-    hostingX
-  );
-  if (attackedServer == corp.RnD)
-    attackedServerGlow.x = RnDWidth * 0.5 + serverStartX;
-  corp.RnD.xStart = serverStartX;
-  corp.RnD.xEnd = serverStartX + RnDWidth;
-  corp.RnD.yCards = rootHeight;
-  serverStartX += RnDWidth + serverSeparationX;
-  HQRootCascade.Apply(
-    cardRenderer.app,
-    HQWidth * 0.5 + serverStartX,
-    corpYTop,
-    0.5,
-    0,
-    hostingX
-  );
-  HQCardsCascade.Apply(
-    cardRenderer.app,
-    HQWidth * 0.5 + serverStartX,
-    rootHeight,
-    0.5,
-    0,
-    hostingX
-  );
-  HQIceCascade.Apply(
-    cardRenderer.app,
-    HQWidth * 0.5 + serverStartX,
-    rootHeight + serverCardsHeight,
-    0.5,
-    0,
-    hostingX
-  );
-  if (attackedServer == corp.HQ)
-    attackedServerGlow.x = HQWidth * 0.5 + serverStartX;
-  corp.HQ.xStart = serverStartX;
-  corp.HQ.xEnd = serverStartX + HQWidth;
-  corp.HQ.yCards = rootHeight;
-  serverStartX += HQWidth + serverSeparationX;
-  for (var i = 0; i < remoteCascades.length; i++) {
-    remoteCascades[i].cards.Apply(
+    //now apply all the renders
+    //RUNNER
+    var runnerYBottom = -70; //above hand
+    if (viewingPlayer == corp) stolenIdentityOffsetY += 30;
+    var resourceRowHeight = Math.min(
+      -resourcesCascade.height - verticalRowSpacing,
+      0
+    );
+    var hardwareRowHeight = Math.min(
+      -hardwareCascade.height - verticalRowSpacing,
+      0
+    );
+    var rowCentreX =
+      (w -
+        Math.max(
+          stolenCascade.width + identityCascade.width,
+          stackCascade.width + heapCascade.width
+        )) *
+      0.5;
+    programsCascade.Apply(
       cardRenderer.app,
-      remoteCascades[i].width * 0.5 + serverStartX,
-      rootHeight,
+      rowCentreX,
+      h + runnerYBottom + resourceRowHeight + hardwareRowHeight,
+      0.5,
+      1,
+      hostingX
+    );
+    hardwareCascade.Apply(
+      cardRenderer.app,
+      rowCentreX,
+      h + runnerYBottom + resourceRowHeight,
+      0.5,
+      1,
+      hostingX
+    );
+    resourcesCascade.Apply(
+      cardRenderer.app,
+      rowCentreX,
+      h + runnerYBottom,
+      0.5,
+      1,
+      hostingX
+    );
+    stolenCascade.Apply(
+      cardRenderer.app,
+      w,
+      h + runnerYBottom + stolenIdentityOffsetY,
+      1,
+      1,
+      hostingX
+    );
+    identityCascade.Apply(
+      cardRenderer.app,
+      w - stolenCascade.width - stolenIdentitySpacing,
+      h + stolenIdentityOffsetY + runnerYBottom,
+      1,
+      1,
+      hostingX
+    );
+    var stackHeapBottom =
+      h +
+      stackHeapSpacingY -
+      Math.max(stolenCascade.height, identityCascade.height) +
+      stolenIdentityOffsetY; //runnerYBottom intentionally not included
+    heapCascade.Apply(cardRenderer.app, w, stackHeapBottom, 1, 1, hostingX);
+    runner.heap.xStart = w - heapCascade.width;
+    runner.heap.xEnd = w;
+    runner.heap.yCards = stackHeapBottom;
+    stackCascade.Apply(
+      cardRenderer.app,
+      w - heapCascade.width - stackHeapSpacingX,
+      stackHeapBottom,
+      1,
+      1,
+      hostingX
+    );
+    runner.stack.xStart =
+      w - heapCascade.width - stackHeapSpacingX - stackCascade.width;
+    runner.stack.xEnd = w - heapCascade.width - stackHeapSpacingX;
+    runner.stack.yCards = stackHeapBottom;
+    //resolving cards and grip are applied along with corp's, farther down
+
+    //CORP
+    //aesthetic improvements to fit more on the screen
+    var corpYTop = 20;
+    if (viewingPlayer == corp) corpYTop = 50;
+    serverCardsHeight -= 80;
+    rootHeight += corpYTop;
+    if (rootHeight > 80) rootHeight -= 80;
+    else if (rootHeight < 100 || viewingPlayer == corp) rootHeight = 100; //leave some space, even if no upgrades, so drawing from deck feels right
+    var attackedServerGlow = { x: 0, y: serverCardsHeight * 0.5 + rootHeight }; //used for rendering glow
+    cardRenderer.archivesIndicator.y = serverCardsHeight * 0.5 + rootHeight; //used for choosing empty archives
+    cardRenderer.newRemoteIndicator.y = serverCardsHeight * 0.5 + rootHeight; //used for choosing new server
+    cardRenderer.serverSelector.y = serverCardsHeight * 0.5 + rootHeight; //highlight to choosing a server
+    cardRenderer.serverSelector.scale.y = largestServerHeight / 44.0; //44 is the height of the particles.png image
+    cardRenderer.serverText.y = 105.0 + cardRenderer.serverSelector.y;
+    if (viewingPlayer == corp) {
+      cardRenderer.serverText.rotation = Math.PI;
+      cardRenderer.serverText.y += 6;
+    }
+
+    scoredCascade.Apply(cardRenderer.app, 0, corpYTop, 0, 0, hostingX);
+    archivesRootCascade.Apply(
+      cardRenderer.app,
+      archivesWidth * 0.5 + serverStartX,
+      corpYTop,
       0.5,
       0,
       hostingX
     );
-    remoteCascades[i].ice.Apply(
+    archivesCardsCascade.Apply(
       cardRenderer.app,
-      remoteCascades[i].width * 0.5 + serverStartX,
+      archivesWidth * 0.5 + serverStartX,
+      rootHeight,
+      0.5,
+      0,
+      hostingX,
+      5
+    );
+    archivesIceCascade.Apply(
+      cardRenderer.app,
+      archivesWidth * 0.5 + serverStartX,
       rootHeight + serverCardsHeight,
       0.5,
       0,
       hostingX
     );
-    if (attackedServer == corp.remoteServers[i])
-      attackedServerGlow.x = remoteCascades[i].width * 0.5 + serverStartX;
-    corp.remoteServers[i].xStart = serverStartX;
-    corp.remoteServers[i].xEnd = serverStartX + remoteCascades[i].width;
-	corp.remoteServers[i].yCards = rootHeight;
-    serverStartX += remoteCascades[i].width + serverSeparationX;
+    if (attackedServer == corp.archives)
+      attackedServerGlow.x = archivesWidth * 0.5 + serverStartX;
+    corp.archives.xStart = serverStartX;
+    corp.archives.xEnd = serverStartX + archivesWidth;
+    corp.archives.yCards = rootHeight;
+    serverStartX += archivesWidth + serverSeparationX;
+    RnDRootCascade.Apply(
+      cardRenderer.app,
+      RnDWidth * 0.5 + serverStartX,
+      corpYTop,
+      0.5,
+      0,
+      hostingX
+    );
+    RnDCardsCascade.Apply(
+      cardRenderer.app,
+      RnDWidth * 0.5 + serverStartX,
+      rootHeight,
+      0.5,
+      0,
+      hostingX
+    );
+    RnDIceCascade.Apply(
+      cardRenderer.app,
+      RnDWidth * 0.5 + serverStartX,
+      rootHeight + serverCardsHeight,
+      0.5,
+      0,
+      hostingX
+    );
+    if (attackedServer == corp.RnD)
+      attackedServerGlow.x = RnDWidth * 0.5 + serverStartX;
+    corp.RnD.xStart = serverStartX;
+    corp.RnD.xEnd = serverStartX + RnDWidth;
+    corp.RnD.yCards = rootHeight;
+    serverStartX += RnDWidth + serverSeparationX;
+    HQRootCascade.Apply(
+      cardRenderer.app,
+      HQWidth * 0.5 + serverStartX,
+      corpYTop,
+      0.5,
+      0,
+      hostingX
+    );
+    HQCardsCascade.Apply(
+      cardRenderer.app,
+      HQWidth * 0.5 + serverStartX,
+      rootHeight,
+      0.5,
+      0,
+      hostingX
+    );
+    HQIceCascade.Apply(
+      cardRenderer.app,
+      HQWidth * 0.5 + serverStartX,
+      rootHeight + serverCardsHeight,
+      0.5,
+      0,
+      hostingX
+    );
+    if (attackedServer == corp.HQ)
+      attackedServerGlow.x = HQWidth * 0.5 + serverStartX;
+    corp.HQ.xStart = serverStartX;
+    corp.HQ.xEnd = serverStartX + HQWidth;
+    corp.HQ.yCards = rootHeight;
+    serverStartX += HQWidth + serverSeparationX;
+    for (var i = 0; i < remoteCascades.length; i++) {
+      remoteCascades[i].cards.Apply(
+        cardRenderer.app,
+        remoteCascades[i].width * 0.5 + serverStartX,
+        rootHeight,
+        0.5,
+        0,
+        hostingX
+      );
+      remoteCascades[i].ice.Apply(
+        cardRenderer.app,
+        remoteCascades[i].width * 0.5 + serverStartX,
+        rootHeight + serverCardsHeight,
+        0.5,
+        0,
+        hostingX
+      );
+      if (attackedServer == corp.remoteServers[i])
+        attackedServerGlow.x = remoteCascades[i].width * 0.5 + serverStartX;
+      corp.remoteServers[i].xStart = serverStartX;
+      corp.remoteServers[i].xEnd = serverStartX + remoteCascades[i].width;
+  	corp.remoteServers[i].yCards = rootHeight;
+      serverStartX += remoteCascades[i].width + serverSeparationX;
+    }
+  
+    //put server labels and tutorial text on top (but under hand, resolving cards, viewing grid and gui)
+    cardRenderer.app.stage.addChild(cardRenderer.serverText);
+    // Only add tutorialText to stage if t=1 parameter is present
+    if (URIParameter("t") === "1") {
+      cardRenderer.app.stage.addChild(cardRenderer.tutorialText);
+    }
+  
+    //runner resolving cards and hand
+    runnerResolvingCascade.Apply(
+      cardRenderer.app,
+      w - heapCascade.width - stackHeapSpacingX * 2 - stackCascade.width,
+      stackHeapBottom + runnerYBottom,
+      0.5,
+      0.75,
+      hostingX
+    );
+    var runnerHandX = w - (w - runnerHeaderFooter * fieldZoom) * 0.5;
+    gripCascade.Apply(cardRenderer.app, runnerHandX, h, 0.5, 0.5, hostingX); //runnerYBottom intentionally not included. space left for footer/header
+    FanHand(runner);
+  
+    //corp resolving cards and hand on top
+    //we're putting resolving cards between HQ and R&D to minimise obscuring of things (but change this if it isn't great)
+    corpResolvingCascade.Apply(cardRenderer.app, corp.HQ.xStart, rootHeight + serverCardsHeight, 0.5, 0.25, hostingX);
+    var corpHandX =
+      (w - corpHeaderFooter * fieldZoom + arbitraryMenubarSpacer) * 0.5;
+    corpHandCascade.Apply(cardRenderer.app, corpHandX, 0, 0.5, 0.5, hostingX);
+    FanHand(corp);
   }
-  
-  //put server labels and tutorial text on top (but under hand, resolving cards, viewing grid and gui)
-  cardRenderer.app.stage.addChild(cardRenderer.serverText);
-  // Only add tutorialText to stage if t=1 parameter is present
-  if (URIParameter("t") === "1") {
-    cardRenderer.app.stage.addChild(cardRenderer.tutorialText);
-  }
-  
-  //runner resolving cards and hand
-  runnerResolvingCascade.Apply(
-    cardRenderer.app,
-    w - heapCascade.width - stackHeapSpacingX * 2 - stackCascade.width,
-    stackHeapBottom + runnerYBottom,
-    0.5,
-    0.75,
-    hostingX
-  );
-  var runnerHandX = w - (w - runnerHeaderFooter * fieldZoom) * 0.5;
-  gripCascade.Apply(cardRenderer.app, runnerHandX, h, 0.5, 0.5, hostingX); //runnerYBottom intentionally not included. space left for footer/header
-  FanHand(runner);
-  
-  //corp resolving cards and hand on top
-  //we're putting resolving cards between HQ and R&D to minimise obscuring of things (but change this if it isn't great)
-  corpResolvingCascade.Apply(cardRenderer.app, corp.HQ.xStart, rootHeight + serverCardsHeight, 0.5, 0.25, hostingX);
-  var corpHandX =
-    (w - corpHeaderFooter * fieldZoom + arbitraryMenubarSpacer) * 0.5;
-  corpHandCascade.Apply(cardRenderer.app, corpHandX, 0, 0.5, 0.5, hostingX);
-  FanHand(corp);
 
   //render viewing grid, either for access or just view
   if (viewingGrid == null && viewingPile !== null) viewingGrid = viewingPile;
@@ -1454,7 +1492,8 @@ function Render() {
 	  else {
 		  if (viewingPlayer == runner) counterUIWOffset += counterPositionings[i].rw;
 		  else counterUIWOffset += counterPositionings[i].cw;
-		  counterPositionings[i].e.SetPosition(guiWOffset + w - counterUIWOffset, counterPositionings[i].h + corpFooterHeight);
+		  if (portraitResult) counterPositionings[i].e.SetPosition(portraitResult.corpCounters.right - counterUIWOffset, portraitResult.corpCounters.y);
+		  else counterPositionings[i].e.SetPosition(guiWOffset + w - counterUIWOffset, counterPositionings[i].h + corpFooterHeight);
 		  guiWOffset -= guiWSpacingModifier;
 	  }
   }
@@ -1481,7 +1520,8 @@ function Render() {
 	  else {
 		  if (viewingPlayer == runner) counterUIWOffset += counterPositionings[i].rw;
 		  else counterUIWOffset += counterPositionings[i].cw;
-		  counterPositionings[i].e.SetPosition(guiWOffset + counterUIWOffset, h - counterPositionings[i].h - runnerFooterHeight);
+		  if (portraitResult) counterPositionings[i].e.SetPosition(portraitResult.runnerCounters.left + counterUIWOffset, portraitResult.runnerCounters.y);
+		  else counterPositionings[i].e.SetPosition(guiWOffset + counterUIWOffset, h - counterPositionings[i].h - runnerFooterHeight);
 		  guiWOffset -= guiWSpacingModifier;
 	  }
   }
@@ -2632,4 +2672,4 @@ function LoadDebugMenuFromSettings() {
   } catch (e) {
     console.warn('Could not load debug menu setting from settings:', e);
   }
-}
+}

@@ -13,27 +13,38 @@ is deployed.
 
 1. Open <https://namald.github.io/anra/> in Chrome on the phone.
 2. Chrome menu → **Add to Home screen** → **Install**.
-3. Launch it from the home screen. Games are played in landscape.
+3. Launch it from the home screen. Play in portrait or landscape; the board re-lays itself out when you rotate.
 
-Card art isn't included (it isn't freely redistributable). Without it, cards appear as text
-faces generated from the card database, which is enough to play. To get the real art,
-download `images.zip` from <https://chiriboga.cronbach.com/images/images.zip> on the phone and
-import it via **Card Images** in the main menu. The art is stored on the device for offline use.
+Card art isn't bundled (it isn't freely redistributable). Instead each card's art is loaded
+from NetrunnerDB the first time it's needed and kept on the phone. **Card Images** in the main
+menu can download all of it at once for offline play, or import the Netrunner Solo Mode image
+pack (<https://chiriboga.cronbach.com/images/images.zip>), which also has the game's icons and
+card backs. Any card whose art can't be loaded is drawn as a text card from the card database.
 
-Touch controls come from the engine: tap to select, press and hold a card to zoom in on it.
+Touch controls: tap a card to read it full screen (unless the tap does something in the game,
+such as rezzing or using an ability), press and hold to zoom in on it, drag a card from your
+hand to play it.
 
 ## What's changed from upstream
 
-`engine/` is an unmodified copy of upstream (commit in `engine/UPSTREAM_COMMIT`). The build
-(`scripts/build.mjs`) turns it into a static site in `dist/`:
+`engine/` is a copy of upstream (commit in `engine/UPSTREAM_COMMIT`) with one change: a
+portrait board layout. `engine/portrait.js` lays the corp's servers out in rows and the
+runner's rig above their identity, stack and heap, so a tall phone screen is filled instead
+of the landscape board being shrunk to its width. Small hooks in `init.js` (`Render`),
+`utility.js` (`MouseIsOverServer`) and `cardrenderer.js` (server highlight) make server
+targeting work with rows; `cardrenderer.js` also opens the card reader on a tap; landscape behaves exactly as upstream.
+
+The build (`scripts/build.mjs`) turns it into a static site in `dist/`:
 
 - renders the PHP pages to plain HTML once at build time (PHP was only used for cache-busting and includes)
 - removes Google Analytics and the IP address display
 - adds `mobile/`: a PWA manifest and icons, a service worker for offline play and text-card
-  placeholders, high-DPI board rendering, landscape lock and a rotate prompt, suppression of
-  long-press menus, and the card-art importer
+  placeholders, high-DPI board rendering, a phone-sized HUD in portrait, haptic taps on
+  buttons, keeping the screen awake during a game, suppression of long-press menus, and the
+  card-art importer
 
-To update the engine, replace `engine/` with a newer upstream checkout and rebuild.
+To update the engine, replace `engine/` with a newer upstream checkout, re-apply the portrait
+hooks (`git log -p -- engine/` shows them) and rebuild.
 
 ## Build and deploy
 
@@ -43,6 +54,11 @@ Requires Node 18+ and the PHP CLI.
 npm run build   # writes dist/
 npm run serve   # http://localhost:8080
 ```
+
+Installed copies update themselves: when the app is opened (or brought back to the
+foreground) it checks for a new version, installs it in the background and reloads onto it,
+except during a game, where the update loads afterwards. **Card Images → Reload latest
+version** forces a fresh copy if needed.
 
 The live site is <https://namald.github.io/anra/>. `.github/workflows/pages.yml` rebuilds it on
 every push to `main` by publishing `dist/` to the `gh-pages` branch, which GitHub Pages serves.

@@ -10,9 +10,32 @@
 
   if ("serviceWorker" in navigator) {
     var base = document.currentScript ? new URL("../", document.currentScript.src) : new URL("./", location);
-    navigator.serviceWorker.register(new URL("sw.js", base)).catch(function (e) {
+    navigator.serviceWorker.register(new URL("sw.js", base)).then(function (reg) {
+      // An installed app can stay open for days; check for a new version
+      // whenever it comes back to the foreground.
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") reg.update().catch(function () {});
+      });
+    }).catch(function (e) {
       console.warn("Service worker registration failed", e);
     });
+
+    // A new version has taken over: reload to show it, except mid-game,
+    // where it's picked up on the next page (e.g. back at the menu).
+    var hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (!hadController) return; // first install, nothing old on screen
+      if (page === "engine") showUpdateNotice();
+      else location.reload();
+    });
+  }
+
+  function showUpdateNotice() {
+    var notice = document.createElement("div");
+    notice.className = "anra-update";
+    notice.textContent = "Update installed. It will load after this game.";
+    document.body.appendChild(notice);
+    setTimeout(function () { notice.remove(); }, 6000);
   }
 
   // Render the PixiJS board at the phone's real pixel density (capped for
@@ -46,14 +69,27 @@
     document.addEventListener("contextmenu", function (e) {
       if (e.target && e.target.tagName === "CANVAS") e.preventDefault();
     });
-    // The board is laid out for landscape. Locking only works fullscreen or
-    // when installed, and must follow a user gesture.
-    var tryLock = function () {
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock("landscape").catch(function () {});
-      }
+
+    // A light tap of haptic feedback on the game's buttons.
+    document.addEventListener("pointerdown", function (e) {
+      if (!navigator.vibrate || e.pointerType !== "touch") return;
+      if (e.target.closest && e.target.closest("button, .button, .menu-item")) navigator.vibrate(8);
+    });
+
+    // Keep the screen on while a game is open; games are slow-paced and the
+    // phone would otherwise dim mid-turn. The lock drops when the app is
+    // backgrounded, so take it again on return.
+    var wakeLock = null;
+    var keepAwake = function () {
+      if (!("wakeLock" in navigator) || document.visibilityState !== "visible" || wakeLock) return;
+      navigator.wakeLock.request("screen").then(function (lock) {
+        wakeLock = lock;
+        lock.addEventListener("release", function () { wakeLock = null; });
+      }).catch(function () {});
     };
-    document.addEventListener("pointerdown", tryLock, { once: true });
+    document.addEventListener("visibilitychange", keepAwake);
+    document.addEventListener("pointerdown", keepAwake, { once: true });
+    keepAwake();
   }
 
   if (page === "index") {
@@ -69,23 +105,6 @@
       item.textContent = "CARD IMAGES";
       item.addEventListener("click", function () { location.href = setupUrl; });
       menu.appendChild(item);
-    });
-
-    if (!("caches" in window)) return;
-    caches.open("anra-images").then(function (c) { return c.keys(); }).then(function (keys) {
-      var dismissed = false;
-      try { dismissed = localStorage.getItem("anra-images-hint") === "dismissed"; } catch (e) {}
-      if (keys.length || dismissed) return;
-      var hint = document.createElement("div");
-      hint.className = "anra-hint";
-      hint.innerHTML =
-        '<span>Playing with text-only cards. Import the card art pack for the full look.</span>' +
-        '<a href="' + setupUrl + '">IMPORT</a><button aria-label="Dismiss">✕</button>';
-      hint.querySelector("button").addEventListener("click", function () {
-        try { localStorage.setItem("anra-images-hint", "dismissed"); } catch (e) {}
-        hint.remove();
-      });
-      document.body.appendChild(hint);
     });
   }
 })();
