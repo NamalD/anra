@@ -11,7 +11,7 @@ is deployed.
 
 ## Play on your phone
 
-1. Deploy (see below) and open the site in Chrome on the phone.
+1. Open <https://namald.github.io/anra/> in Chrome on the phone.
 2. Chrome menu → **Add to Home screen** → **Install**.
 3. Launch it from the home screen. Games are played in landscape.
 
@@ -44,8 +44,8 @@ npm run build   # writes dist/
 npm run serve   # http://localhost:8080
 ```
 
-`.github/workflows/pages.yml` builds and publishes to GitHub Pages on every push to `main`.
-Enable it once under **Settings → Pages → Source: GitHub Actions**.
+The live site is <https://namald.github.io/anra/>. `.github/workflows/pages.yml` rebuilds it on
+every push to `main` by publishing `dist/` to the `gh-pages` branch, which GitHub Pages serves.
 
 ## License
 
