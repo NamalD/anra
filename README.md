@@ -15,10 +15,11 @@ is deployed.
 2. Chrome menu → **Add to Home screen** → **Install**.
 3. Launch it from the home screen. Play in portrait or landscape; the board re-lays itself out when you rotate.
 
-Card art isn't included (it isn't freely redistributable). Without it, cards appear as text
-faces generated from the card database, which is enough to play. To get the real art,
-download `images.zip` from <https://chiriboga.cronbach.com/images/images.zip> on the phone and
-import it via **Card Images** in the main menu. The art is stored on the device for offline use.
+Card art isn't bundled (it isn't freely redistributable). Instead each card's art is loaded
+from NetrunnerDB the first time it's needed and kept on the phone. **Card Images** in the main
+menu can download all of it at once for offline play, or import the Netrunner Solo Mode image
+pack (<https://chiriboga.cronbach.com/images/images.zip>), which also has the game's icons and
+card backs. Any card whose art can't be loaded is drawn as a text card from the card database.
 
 Touch controls come from the engine: tap to select, press and hold a card to zoom in on it.
 

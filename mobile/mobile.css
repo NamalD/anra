@@ -76,38 +76,3 @@ html.anra-installed .fullscreen-button {
     padding-right: 8px;
   }
 }
-
-/* ---- Main menu ---- */
-
-.anra-hint {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid #33ff33;
-  background: rgba(5, 12, 8, 0.95);
-  color: #b9ffb9;
-  font: 13px/1.4 monospace;
-}
-.anra-hint span {
-  flex: 1;
-}
-.anra-hint a {
-  color: #0b1114;
-  background: #33ff33;
-  padding: 8px 12px;
-  text-decoration: none;
-  font-weight: bold;
-}
-.anra-hint button {
-  background: none;
-  border: none;
-  color: #b9ffb9;
-  font-size: 18px;
-  padding: 6px;
-}

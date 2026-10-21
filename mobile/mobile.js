@@ -83,22 +83,5 @@
       item.addEventListener("click", function () { location.href = setupUrl; });
       menu.appendChild(item);
     });
-
-    if (!("caches" in window)) return;
-    caches.open("anra-images").then(function (c) { return c.keys(); }).then(function (keys) {
-      var dismissed = false;
-      try { dismissed = localStorage.getItem("anra-images-hint") === "dismissed"; } catch (e) {}
-      if (keys.length || dismissed) return;
-      var hint = document.createElement("div");
-      hint.className = "anra-hint";
-      hint.innerHTML =
-        '<span>Playing with text-only cards. Import the card art pack for the full look.</span>' +
-        '<a href="' + setupUrl + '">IMPORT</a><button aria-label="Dismiss">✕</button>';
-      hint.querySelector("button").addEventListener("click", function () {
-        try { localStorage.setItem("anra-images-hint", "dismissed"); } catch (e) {}
-        hint.remove();
-      });
-      document.body.appendChild(hint);
-    });
   }
 })();
