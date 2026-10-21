@@ -4280,4 +4280,4 @@ function FindCardDefWithMostSimilarTitle(str) {
 	}
   }
   return cardSet[mostSimilarIndex];
-}
+}

@@ -2672,4 +2672,4 @@ function LoadDebugMenuFromSettings() {
   } catch (e) {
     console.warn('Could not load debug menu setting from settings:', e);
   }
-}
+}
