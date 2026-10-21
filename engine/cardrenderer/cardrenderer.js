@@ -2124,6 +2124,15 @@ var CardRenderer = {
 			i--;
 		}
       }
+      //counters were just raised to the top, so put any zoomed card back above them
+      var zoomedSprites = this.app.stage.children.filter(function (child) {
+        return child.card && child.card.zoomed;
+      });
+      for (var i = 0; i < zoomedSprites.length; i++) {
+        var zoomedCard = zoomedSprites[i].card;
+        if (zoomedCard.glowSprite.parent) zoomedCard.glowSprite.parent.addChild(zoomedCard.glowSprite);
+        zoomedSprites[i].parent.addChild(zoomedSprites[i]);
+      }
     }
 
     CreateParticleContainer() {
