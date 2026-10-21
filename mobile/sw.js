@@ -290,6 +290,26 @@ function glyphSvg(name) {
   if (n.includes("known")) return disc("#2a8a5a", "👁");
   if (n.includes("broken")) return disc("#555", "✕");
   if (n.includes("subroutine")) return sq(32, `<path d="M8 16h40l-10-10M48 16l-10 10" transform="scale(0.6)" stroke="#fff" stroke-width="6" fill="none"/>`);
+  // Highlights drawn around selectable cards, at the same 0.5 scale as cards.
+  if (n === "glow_white" || n === "glow_white_cropped" || n === "glow_white_ice") {
+    const pad = n === "glow_white" ? 30 : 16;
+    const gw = W + pad * 2;
+    const gh = H + pad * 2;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${gw}" height="${gh}" viewBox="0 0 ${gw} ${gh}">` +
+      `<defs><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${pad / 3}"/></filter></defs>` +
+      `<rect x="${pad * 0.6}" y="${pad * 0.6}" width="${gw - pad * 1.2}" height="${gh - pad * 1.2}" rx="20" fill="none" stroke="#fff" stroke-width="${pad * 0.8}" filter="url(#b)"/>` +
+      `<rect x="${pad * 0.8}" y="${pad * 0.8}" width="${gw - pad * 1.6}" height="${gh - pad * 1.6}" rx="18" fill="none" stroke="#fff" stroke-width="5"/>` +
+      `</svg>`
+    );
+  }
+  if (n.includes("glow_outline")) {
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+      `<rect x="6" y="6" width="${W - 12}" height="${H - 12}" rx="16" fill="none" stroke="#fff" stroke-width="8" stroke-dasharray="28 16"/>` +
+      `</svg>`
+    );
+  }
   if (n.includes("glow") || n.includes("particle")) {
     return sq(64, `<defs><radialGradient id="g"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><circle cx="32" cy="32" r="32" fill="url(#g)"/>`);
   }

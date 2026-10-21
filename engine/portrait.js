@@ -8,6 +8,14 @@ function IsPortraitLayout() {
   return window.innerHeight > window.innerWidth;
 }
 
+//true if any of the current options is a card in this hand
+function HandHasChoices(hand) {
+  for (var i = 0; i < validOptions.length; i++) {
+    if (validOptions[i].card && hand.includes(validOptions[i].card)) return true;
+  }
+  return false;
+}
+
 //clear per-render server geometry so landscape falls back to its original behaviour
 function ResetServerGeometry() {
   var servers = [corp.archives, corp.RnD, corp.HQ].concat(corp.remoteServers);
@@ -145,7 +153,8 @@ function ApplyPortraitLayout(L) {
 
   //CORP (top down)
   //hand centres, allowing for FanHand's offsets: the viewer's hand is mostly visible, the opponent's just peeks out
-  var corpHandY = corpView ? top + 25 : top - 90;
+  //...unless the opponent's hand has cards to choose from (e.g. accessing HQ), then it comes into view to be tapped
+  var corpHandY = corpView ? top + 25 : HandHasChoices(corp.HQ.cards) ? top + 60 : top - 90;
   var corpCountersY = (corpView ? top + handZone : top + peekZone) + 10;
   var y = corpCountersY + counterRow - 10;
   var attackedServerGlow = { x: 0, y: 0 };
@@ -197,7 +206,7 @@ function ApplyPortraitLayout(L) {
   cardRenderer.serverSelector.scale.y = rowGeometry[0].height / 44.0;
 
   //RUNNER (bottom up)
-  var runnerHandY = corpView ? bottom + 90 : bottom - 25;
+  var runnerHandY = !corpView ? bottom - 25 : HandHasChoices(runner.grip) ? bottom - 60 : bottom + 90;
   var baseBottom = corpView ? bottom - peekZone : bottom - handZone;
   var baseRight = centreX + 0.5 * baseRowWidth;
   var baseLeft = centreX - 0.5 * baseRowWidth;

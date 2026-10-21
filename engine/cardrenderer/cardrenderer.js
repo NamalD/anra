@@ -1417,8 +1417,14 @@ var CardRenderer = {
       var wasTap = tapDistance.x * tapDistance.x + tapDistance.y * tapDistance.y < 1000;
       var renderer = this.card;
       var openReader = function () {
-        if (wasTap && (renderer.faceUp || renderer.canView) && typeof ShowCardReader === "function")
-          ShowCardReader(renderer.card);
+        if (!wasTap || !(renderer.faceUp || renderer.canView) || typeof ShowCardReader !== "function") return;
+        //this tap is choosing a server (resolved by the stage's pointerup handler after this)
+        if (OptionsAreOnlyUniqueServers()) {
+          for (var i = 0; i < validOptions.length; i++) {
+            if (MouseIsOverServer(validOptions[i].server)) return;
+          }
+        }
+        ShowCardReader(renderer.card);
       };
       if (this.card.availability == 2 && wasTap) {
         //tapping a card that can be dragged doesn't play it, so just show it
