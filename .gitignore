@@ -1,0 +1,4 @@
+dist/
+node_modules/
+# Card art is not redistributable; import it on the device instead.
+engine/images/

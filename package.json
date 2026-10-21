@@ -1,0 +1,10 @@
+{
+  "name": "anra",
+  "private": true,
+  "description": "Netrunner solo game for phones, built on the Chiriboga engine",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "npx --yes http-server dist -p 8080 -c-1"
+  }
+}
