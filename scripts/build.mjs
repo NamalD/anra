@@ -32,14 +32,20 @@ fs.cpSync(mobileDir, path.join(dist, "mobile"), { recursive: true });
 fs.renameSync(path.join(dist, "mobile", "sw.js"), path.join(dist, "sw.js"));
 fs.renameSync(path.join(dist, "mobile", "manifest.webmanifest"), path.join(dist, "manifest.webmanifest"));
 
+// Versioned URLs for the mobile assets so a fresh page never picks up stale
+// copies from the HTTP cache.
+const mobileHash = createHash("sha256");
+for (const f of walk(mobileDir).sort()) mobileHash.update(f).update(fs.readFileSync(f));
+const v = "?v=" + mobileHash.digest("hex").slice(0, 8);
+
 const HEAD_INJECT = [
   '<meta name="theme-color" content="#0b1114">',
   '<meta name="mobile-web-app-capable" content="yes">',
   '<link rel="manifest" href="manifest.webmanifest">',
   '<link rel="icon" href="mobile/icons/icon-192.png">',
-  '<link rel="stylesheet" href="mobile/mobile.css">',
-  '<script src="mobile/mobile.js"></script>',
-  '<script src="mobile/reader.js"></script>',
+  `<link rel="stylesheet" href="mobile/mobile.css${v}">`,
+  `<script src="mobile/mobile.js${v}"></script>`,
+  `<script src="mobile/reader.js${v}"></script>`,
 ].join("\n");
 
 const phpLinks = /\b(index|engine|decklauncher|gauntlet)\.php\b/g;

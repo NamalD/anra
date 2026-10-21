@@ -55,6 +55,11 @@ npm run build   # writes dist/
 npm run serve   # http://localhost:8080
 ```
 
+Installed copies update themselves: when the app is opened (or brought back to the
+foreground) it checks for a new version, installs it in the background and reloads onto it,
+except during a game, where the update loads afterwards. **Card Images → Reload latest
+version** forces a fresh copy if needed.
+
 The live site is <https://namald.github.io/anra/>. `.github/workflows/pages.yml` rebuilds it on
 every push to `main` by publishing `dist/` to the `gh-pages` branch, which GitHub Pages serves.
 

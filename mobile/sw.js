@@ -17,10 +17,14 @@ self.addEventListener("install", (event) => {
     caches
       .open(APP_CACHE)
       .then((cache) =>
-        // One bad file shouldn't stop the whole app from installing.
+        // One bad file shouldn't stop the whole app from installing. Bypass
+        // the HTTP cache (GitHub Pages allows 10 minutes), or a new version
+        // can be filled with the previous version's files.
         Promise.all(
           PRECACHE.map((p) =>
-            cache.add(new URL(p, BASE)).catch((e) => console.warn("precache failed", p, e)),
+            cache
+              .add(new Request(new URL(p, BASE), { cache: "reload" }))
+              .catch((e) => console.warn("precache failed", p, e)),
           ),
         ),
       )

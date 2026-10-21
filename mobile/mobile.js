@@ -10,9 +10,32 @@
 
   if ("serviceWorker" in navigator) {
     var base = document.currentScript ? new URL("../", document.currentScript.src) : new URL("./", location);
-    navigator.serviceWorker.register(new URL("sw.js", base)).catch(function (e) {
+    navigator.serviceWorker.register(new URL("sw.js", base)).then(function (reg) {
+      // An installed app can stay open for days; check for a new version
+      // whenever it comes back to the foreground.
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") reg.update().catch(function () {});
+      });
+    }).catch(function (e) {
       console.warn("Service worker registration failed", e);
     });
+
+    // A new version has taken over: reload to show it, except mid-game,
+    // where it's picked up on the next page (e.g. back at the menu).
+    var hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (!hadController) return; // first install, nothing old on screen
+      if (page === "engine") showUpdateNotice();
+      else location.reload();
+    });
+  }
+
+  function showUpdateNotice() {
+    var notice = document.createElement("div");
+    notice.className = "anra-update";
+    notice.textContent = "Update installed. It will load after this game.";
+    document.body.appendChild(notice);
+    setTimeout(function () { notice.remove(); }, 6000);
   }
 
   // Render the PixiJS board at the phone's real pixel density (capped for

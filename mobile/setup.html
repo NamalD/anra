@@ -64,6 +64,11 @@
   </div>
 
   <button class="secondary" id="clear">REMOVE STORED CARD ART</button>
+
+  <div class="panel">
+    <p>App version: <span id="version">…</span>. Updates install automatically when you open the app. If something looks out of date, this fetches a fresh copy of the app (your card art is kept).</p>
+    <button class="secondary" id="reset">RELOAD LATEST VERSION</button>
+  </div>
 </main>
 
 <script>
@@ -214,6 +219,25 @@ $("all").addEventListener("click", async () => {
 });
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js").catch(() => {});
+caches.keys().then((keys) => {
+  const app = keys.find((k) => k.startsWith("anra-app-"));
+  $("version").textContent = app ? app.slice("anra-app-".length) : "not installed";
+});
+
+// Drop the service worker and the cached app (not the card art), then start
+// again from the network.
+$("reset").addEventListener("click", async () => {
+  $("reset").disabled = true;
+  $("reset").textContent = "RELOADING…";
+  if (navigator.serviceWorker) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map((r) => r.unregister()));
+  }
+  const keys = await caches.keys();
+  await Promise.all(keys.filter((k) => k.startsWith("anra-app-")).map((k) => caches.delete(k)));
+  location.href = new URL("index.html?fresh=" + Date.now(), BASE).href;
+});
+
 refresh();
 </script>
 </body>
