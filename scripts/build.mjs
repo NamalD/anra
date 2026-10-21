@@ -39,6 +39,7 @@ const HEAD_INJECT = [
   '<link rel="icon" href="mobile/icons/icon-192.png">',
   '<link rel="stylesheet" href="mobile/mobile.css">',
   '<script src="mobile/mobile.js"></script>',
+  '<script src="mobile/reader.js"></script>',
 ].join("\n");
 
 const phpLinks = /\b(index|engine|decklauncher|gauntlet)\.php\b/g;

@@ -21,7 +21,9 @@ menu can download all of it at once for offline play, or import the Netrunner So
 pack (<https://chiriboga.cronbach.com/images/images.zip>), which also has the game's icons and
 card backs. Any card whose art can't be loaded is drawn as a text card from the card database.
 
-Touch controls come from the engine: tap to select, press and hold a card to zoom in on it.
+Touch controls: tap a card to read it full screen (unless the tap does something in the game,
+such as rezzing or using an ability), press and hold to zoom in on it, drag a card from your
+hand to play it.
 
 ## What's changed from upstream
 
@@ -30,7 +32,7 @@ portrait board layout. `engine/portrait.js` lays the corp's servers out in rows 
 runner's rig above their identity, stack and heap, so a tall phone screen is filled instead
 of the landscape board being shrunk to its width. Small hooks in `init.js` (`Render`),
 `utility.js` (`MouseIsOverServer`) and `cardrenderer.js` (server highlight) make server
-targeting work with rows; landscape behaves exactly as upstream.
+targeting work with rows; `cardrenderer.js` also opens the card reader on a tap; landscape behaves exactly as upstream.
 
 The build (`scripts/build.mjs`) turns it into a static site in `dist/`:
 

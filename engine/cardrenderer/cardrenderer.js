@@ -1409,6 +1409,23 @@ var CardRenderer = {
 
     //click callback (uses this.sprite as context)
     OnClick() {
+      //a tap (as opposed to a drag) on a card the viewer can see may open the card reader below
+      var tapDistance = {
+        x: pixi_mousePosition.x - pixi_mouseStart.x,
+        y: pixi_mousePosition.y - pixi_mouseStart.y,
+      };
+      var wasTap = tapDistance.x * tapDistance.x + tapDistance.y * tapDistance.y < 1000;
+      var renderer = this.card;
+      var openReader = function () {
+        if (wasTap && (renderer.faceUp || renderer.canView) && typeof ShowCardReader === "function")
+          ShowCardReader(renderer.card);
+      };
+      if (this.card.availability == 2 && wasTap) {
+        //tapping a card that can be dragged doesn't play it, so just show it
+        this.pointerout(); //clear highlight
+        openReader();
+        return;
+      }
       if (this.card.availability == 2) {
         //i.e. drag and drop to choose
         if (pixi_playThreshold(this.card)) {
@@ -1445,8 +1462,10 @@ var CardRenderer = {
 		  cardRenderer.storedView = previousViewingGrid; //so any existing view can restored when this is closed          
 		  viewingPile = this.card.card.cardLocation;
           Render(); //force the visual change
+          return;
         }
       }
+      openReader();
     }
 
     //in world transform, but relative to anchor
