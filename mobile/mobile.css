@@ -76,3 +76,19 @@ html.anra-installed .fullscreen-button {
   font-size: 18px;
   padding: 6px;
 }
+
+/* ---- 3D board (mobile/board3d.js) ---- */
+
+/* Pixi keeps drawing the board and receiving input, but the Three.js view
+   of it is what's shown. */
+html.anra-3d canvas.anra-board3d-source {
+  opacity: 0;
+}
+
+canvas.anra-board3d {
+  pointer-events: none;
+}
+
+#menubar .anra-view-toggle {
+  width: 56px;
+}

@@ -54,6 +54,12 @@
       }
     };
     document.addEventListener("pointerdown", tryLock, { once: true });
+
+    // Three.js 3D table (mobile/board3d.js).
+    var board3d = document.createElement("script");
+    board3d.type = "module";
+    board3d.src = new URL("board3d.js", document.currentScript.src).href;
+    document.head.appendChild(board3d);
   }
 
   if (page === "index") {

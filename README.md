@@ -22,6 +22,15 @@ import it via **Card Images** in the main menu. The art is stored on the device 
 
 Touch controls come from the engine: tap to select, press and hold a card to zoom in on it.
 
+### 3D table
+
+The game board is shown as a 3D table rendered with [Three.js](https://threejs.org/)
+(`mobile/board3d.js`). The engine still draws the board with PixiJS; that canvas is hidden and
+used as a live texture on the table, and touches are ray-cast onto the table and handed back to
+the engine, so all the usual gestures work. Pile and card-choice views flatten automatically
+so they're easy to read. The **2D** button next to MENU switches back to the flat board (the
+choice is remembered), as does opening a game with `view=2d` in the URL.
+
 ## What's changed from upstream
 
 `engine/` is an unmodified copy of upstream (commit in `engine/UPSTREAM_COMMIT`). The build
@@ -29,7 +38,8 @@ Touch controls come from the engine: tap to select, press and hold a card to zoo
 
 - renders the PHP pages to plain HTML once at build time (PHP was only used for cache-busting and includes)
 - removes Google Analytics and the IP address display
-- adds `mobile/`: a PWA manifest and icons, a service worker for offline play and text-card
+- adds `mobile/`: a PWA manifest and icons, the Three.js 3D table (`mobile/three/` is a vendored
+  copy of three.js r170), a service worker for offline play and text-card
   placeholders, high-DPI board rendering, landscape lock and a rotate prompt, suppression of
   long-press menus, and the card-art importer
 
