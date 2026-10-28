@@ -6,7 +6,7 @@
 		<title>Netrunner: Solo Mode</title>
 		<link href="images/favicon.ico" rel="icon">
 		<?php echo '<link rel="stylesheet" href="jquery/jquery-ui.css?' . filemtime('jquery/jquery-ui.css') . '" />'; ?>
-		<?php echo '<link rel="stylesheet" href="style.css?' . filemtime('style.css') . '" />'; ?>
+		<?php echo '<link rel="stylesheet" href="style.css?' . filemtime('style.css') . '" />'; ?><?php echo '<link rel="stylesheet" href="decks.css?' . filemtime('decks.css') . '" />'; ?>
 		<link rel="manifest" href="manifest.json">
 		<?php
 		include 'cardrenderer/webfont.php';
