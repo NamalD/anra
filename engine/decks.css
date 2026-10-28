@@ -465,6 +465,24 @@ div#deck:empty::before {
   white-space: nowrap;
 }
 
+/* Card image shown beside the pointer while hovering a deck list (cardpreview.js) */
+#card-hover-preview {
+  position: fixed;
+  z-index: 10003;
+  width: 240px;
+  aspect-ratio: 63 / 88;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+#card-hover-preview.visible {
+  visibility: visible;
+  opacity: 1;
+}
+
 .deck-actions {
   display: flex;
   flex-wrap: wrap;

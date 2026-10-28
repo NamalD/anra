@@ -156,6 +156,7 @@
 		</script>
 		<?php
 		echo '<script src="utility.js?' . filemtime('utility.js') . '"></script>';
+		echo '<script src="cardpreview.js?' . filemtime('cardpreview.js') . '"></script>';
 			echo '<script src="config.js?' . filemtime('config.js') . '"></script>';
 		// =================================================================
 		// GAUNTLET SETS - Base set only, additional sets loaded via JS
