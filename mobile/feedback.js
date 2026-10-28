@@ -212,7 +212,7 @@
       var el = e.target.closest && e.target.closest(TAPPABLE);
       if (!el || el.disabled || el.classList.contains("disabled")) return;
       var primary =
-        el.matches(".menu-item-primary, .button.primary, #footerbutton-n, .modal-content span, .modal-content p[onclick]");
+        el.matches(".menu-item-primary, .button.primary, #footerbutton-n, #footerbutton-continue, .modal-content span, .modal-content p[onclick]");
       window.Feedback.play(primary ? "confirm" : "tap");
     },
     { capture: true, passive: true },

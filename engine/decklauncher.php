@@ -100,7 +100,7 @@
 				var order = ['identity','agenda','operation','event','asset','upgrade','hardware','program','resource','ice','other'];
 				var lines = [];
 				for (var gi=0; gi<order.length; gi++) { var g=order[gi]; if (!grouped[g]) continue; grouped[g].sort(function(a,b){return cardSet[a].title.localeCompare(cardSet[b].title);}); lines.push('['+g.toUpperCase()+']'); for (var k=0;k<grouped[g].length;k++){ var id=grouped[g][k]; lines.push(counts[id]+' '+cardSet[id].title);} lines.push(''); }
-				var html = '<div class="card-text-info"><h2>'+cardSet[oppJSON.identity].title+'</h2><p class="card-type">Total Cards: '+oppJSON.cards.length+'</p><pre style="white-space:pre-wrap; font-size:13px; line-height:1.4;">'+lines.join('\n')+'</pre></div>';
+				var html = '<div class="card-text-info"><h2>'+cardSet[oppJSON.identity].title+'</h2><p class="card-type">Total Cards: '+oppJSON.cards.length+'</p><pre>'+lines.join('\n')+'</pre></div>';
 				$('#lightbox-text').html(html);
 				$('#lightbox').addClass('active');
 			}
@@ -279,7 +279,7 @@
 				window.PopulatePreconDropdownForIdentity = function(identityId) {
 					var dropdown = $('#preconselect');
 					dropdown.empty();
-					dropdown.append('<option value="-1">Load Precon Deck</option>');
+					dropdown.append('<option value="-1">Load precon deck</option>');
 					for (var i = 0; i < preconDecks.length; i++) {
 						var deck = preconDecks[i];
 						if (String(identityId) === String(deck.identity) && deck.useForCustomGame) {
@@ -294,7 +294,7 @@
 				} else if (json && json.identity) {
 					window.PopulatePreconDropdownForIdentity(json.identity);
 				} else {
-					$('#preconselect').empty().append('<option value="-1">Load Precon Deck</option>');
+					$('#preconselect').empty().append('<option value="-1">Load precon deck</option>');
 				}
 			});
 
@@ -471,19 +471,19 @@
 			function CycleSort() {
 				if (currentSort === 'id') {
 					currentSort = 'name';
-					$('#sortdeck').html('SORT BY:<br>NAME');
+					$('#sortdeck').html('<small>Sort</small>Name');
 				} else if (currentSort === 'name') {
 					currentSort = 'influence';
-					$('#sortdeck').html('SORT BY:<br>INFLUENCE');
+					$('#sortdeck').html('<small>Sort</small>Influence');
 				} else if (currentSort === 'influence') {
 					currentSort = 'type';
-					$('#sortdeck').html('SORT BY:<br>TYPE');
+					$('#sortdeck').html('<small>Sort</small>Type');
 				} else if (currentSort === 'type') {
 					currentSort = 'faction';
-					$('#sortdeck').html('SORT BY:<br>FACTION');
+					$('#sortdeck').html('<small>Sort</small>Faction');
 				} else {
 					currentSort = 'id';
-					$('#sortdeck').html('SORT BY:<br>ID');
+					$('#sortdeck').html('<small>Sort</small>ID');
 				}
 				SortCardContainer();
 				UpdateDeckTextareaFromCounts();
@@ -724,7 +724,7 @@
 			// Build filter options dynamically from LOADED sets only
 			// (based on localStorage settings or setRegistry defaults)
 			var filterOptions = ['all'];
-			var filterLabels = { 'all': 'ALL CARDS' };
+			var filterLabels = { 'all': 'All cards' };
 			
 			// Helper to get default set codes from setRegistry
 			function getDefaultSetCodes() {
@@ -782,7 +782,7 @@
 			} else {
 				// Fallback if setRegistry not available
 				filterOptions = ['all', 'sg', 'su21'];
-				filterLabels = { 'all': 'ALL CARDS', 'sg': 'SG', 'su21': 'SU21' };
+				filterLabels = { 'all': 'All cards', 'sg': 'SG', 'su21': 'SU21' };
 			}
 			var filterIndex = 0;
 
@@ -799,7 +799,7 @@
 				filterIndex = (filterIndex + 1) % filterOptions.length;
 				currentFilter = filterOptions[filterIndex];
 				var label = filterLabels[currentFilter] || currentFilter.toUpperCase();
-				$('#filterdeck').html('FILTER:<br>' + label);
+				$('#filterdeck').html('<small>Filter</small>' + label);
 				ApplyFilter();
 			}
 
@@ -807,26 +807,26 @@
 				filterIndex = (filterIndex - 1 + filterOptions.length) % filterOptions.length;
 				currentFilter = filterOptions[filterIndex];
 				var label = filterLabels[currentFilter] || currentFilter.toUpperCase();
-				$('#filterdeck').html('FILTER:<br>' + label);
+				$('#filterdeck').html('<small>Filter</small>' + label);
 				ApplyFilter();
 			}
 
 			function CycleSortReverse() {
 				if (currentSort === 'id') {
 					currentSort = 'faction';
-					$('#sortdeck').html('SORT BY:<br>FACTION');
+					$('#sortdeck').html('<small>Sort</small>Faction');
 				} else if (currentSort === 'faction') {
 					currentSort = 'type';
-					$('#sortdeck').html('SORT BY:<br>TYPE');
+					$('#sortdeck').html('<small>Sort</small>Type');
 				} else if (currentSort === 'type') {
 					currentSort = 'influence';
-					$('#sortdeck').html('SORT BY:<br>INFLUENCE');
+					$('#sortdeck').html('<small>Sort</small>Influence');
 				} else if (currentSort === 'influence') {
 					currentSort = 'name';
-					$('#sortdeck').html('SORT BY:<br>NAME');
+					$('#sortdeck').html('<small>Sort</small>Name');
 				} else {
 					currentSort = 'id';
-					$('#sortdeck').html('SORT BY:<br>ID');
+					$('#sortdeck').html('<small>Sort</small>ID');
 				}
 				SortCardContainer();
 				UpdateDeckTextareaFromCounts();
@@ -887,13 +887,13 @@
 						var ct = deckCounts[id] || 0;
 						if (ct === 0) $(this).hide();
 					});
-					$('#togglecards').text('SHOW UNSELECTED');
+					$('#togglecards').text('Show unselected');
 					showingOnlySelected = true;
 				} else {
 					// Show all cards allowed by current pack filter
 					showingOnlySelected = false; // update flag BEFORE applying filter so UpdateCardCountsUI won't re-hide
 					ApplyFilter(); // Re-apply the current filter
-					$('#togglecards').text('HIDE UNSELECTED');
+					$('#togglecards').text('Hide unselected');
 				}
 			}
 
@@ -1486,7 +1486,7 @@
 							try {
 								if (!json || !json.identity || !Array.isArray(json.cards)) {
 									$('#save-deck-modal-input').val('');
-									$('#save-deck-modal-message').html('<span style="color: #ff6666;">No deck loaded to save.</span>');
+									$('#save-deck-modal-message').html('<span class="msg-error">No deck loaded to save.</span>');
 									$('#save-deck-modal').css('display', 'flex');
 									return;
 								}
@@ -1498,7 +1498,7 @@
 								$('#save-deck-modal-input').focus().select();
 							} catch(e) {
 								console.error('Error in SaveDeck:', e);
-								$('#save-deck-modal-message').html('<span style="color: #ff6666;">Error: ' + e.message + '</span>');
+								$('#save-deck-modal-message').html('<span class="msg-error">Error: ' + e.message + '</span>');
 								$('#save-deck-modal').css('display', 'flex');
 							}
 						  }
@@ -1507,7 +1507,7 @@
 							try {
 								var deckName = $('#save-deck-modal-input').val().trim();
 								if (!deckName) {
-									$('#save-deck-modal-message').html('<span style="color: #ff6666;">Please enter a deck name.</span>');
+									$('#save-deck-modal-message').html('<span class="msg-error">Please enter a deck name.</span>');
 									return;
 								}
 								
@@ -1523,7 +1523,7 @@
 								allDecks[deckKey] = deckToSave;
 								localStorage.setItem('chiribogaDecks', JSON.stringify(allDecks));
 								
-								$('#save-deck-modal-message').html('<span style="color: #33ff33;">Deck "' + deckName + '" saved successfully!</span>');
+								$('#save-deck-modal-message').html('<span class="msg-ok">Deck "' + deckName + '" saved successfully!</span>');
 								$('#save-deck-modal-input').val('');
 								$('#save-deck-confirm-btn').attr('disabled', 'disabled');
 								
@@ -1537,7 +1537,7 @@
 								}, 2000);
 							} catch(e) {
 								console.error('Error saving deck:', e);
-								$('#save-deck-modal-message').html('<span style="color: #ff6666;">Error saving deck: ' + e.message + '</span>');
+								$('#save-deck-modal-message').html('<span class="msg-error">Error saving deck: ' + e.message + '</span>');
 							}
 						  }
 						  
@@ -1545,7 +1545,7 @@
 							try {
 								var allDecks = JSON.parse(localStorage.getItem('chiribogaDecks') || '{}');
 								if (Object.keys(allDecks).length === 0) {
-									$('#load-deck-modal-message').html('<span style="color: #ff6666;">No saved decks found.</span>');
+									$('#load-deck-modal-message').html('<span class="msg-error">No saved decks found.</span>');
 									$('#load-deck-modal').css('display', 'flex');
 									return;
 								}
@@ -1554,7 +1554,7 @@
 								$('#load-deck-modal').css('display', 'flex');
 							} catch(e) {
 								console.error('Error in LoadDeck:', e);
-								$('#load-deck-modal-message').html('<span style="color: #ff6666;">Error: ' + e.message + '</span>');
+								$('#load-deck-modal-message').html('<span class="msg-error">Error: ' + e.message + '</span>');
 								$('#load-deck-modal').css('display', 'flex');
 							}
 						  }
@@ -1569,16 +1569,15 @@
 									var identityName = (deck.identity && cardSet[deck.identity]) ? cardSet[deck.identity].title : 'Unknown';
 									// Strip everything after and including the colon
 									identityName = identityName.split(':')[0].trim();
-									listHtml += '<div class="load-deck-item" style="display:flex; justify-content:space-between; align-items:flex-start; padding:12px; margin:12px 0; border:1px solid var(--border-green); border-radius:6px; background:rgba(31,109,31,0.1);">';
-									listHtml += '<div style="flex:1; margin-right:20px;">';
-									listHtml += '<div style="font-weight:bold; color:var(--crt-green); margin-bottom:8px;">' + deck.name + '</div>';
-									listHtml += '<div style="font-size:12px; color:var(--crt-green-muted); margin-bottom:4px;">' + cardCount + ' cards</div>';
-									listHtml += '<div style="font-size:12px; color:var(--crt-green-muted); margin-bottom:4px;">' + identityName + '</div>';
-									listHtml += '<div style="font-size:12px; color:var(--crt-green-muted);">' + savedDate + '</div>';
+									listHtml += '<div class="load-deck-item">';
+									listHtml += '<div class="load-deck-info">';
+									listHtml += '<div class="load-deck-name">' + deck.name + '</div>';
+									listHtml += '<div class="load-deck-meta">' + identityName + '</div>';
+									listHtml += '<div class="load-deck-meta">' + cardCount + ' cards · ' + savedDate + '</div>';
 									listHtml += '</div>';
-									listHtml += '<div style="display:flex; gap:8px; flex-shrink:0;">';
-									listHtml += '<button class="button load-deck-load-btn" data-deck-key="' + deckKey + '" style="padding:6px 16px; font-size:12px; min-width:70px;">LOAD</button>';
-									listHtml += '<button class="button load-deck-delete-btn" data-deck-key="' + deckKey + '" style="padding:6px 16px; font-size:12px; min-width:75px;">DELETE</button>';
+									listHtml += '<div class="load-deck-buttons">';
+									listHtml += '<button class="button primary load-deck-load-btn" data-deck-key="' + deckKey + '">Load</button>';
+									listHtml += '<button class="button danger-ghost load-deck-delete-btn" data-deck-key="' + deckKey + '">Delete</button>';
 									listHtml += '</div>';
 									listHtml += '</div>';
 								}
@@ -1665,7 +1664,7 @@
 								if (skippedCards > 0) {
 									successMsg += ' (' + skippedCards + ' cards skipped - not in loaded sets)';
 								}
-								$('#load-deck-modal-message').html('<span style="color: #33ff33;">' + successMsg + '</span>');
+								$('#load-deck-modal-message').html('<span class="msg-ok">' + successMsg + '</span>');
 							} catch(e) {
 								console.error('Error loading deck:', e);
 								alert('Error loading deck: ' + e.message);
@@ -1700,7 +1699,7 @@
 								
 								// Refresh the load deck modal
 								if (Object.keys(allDecks).length === 0) {
-									$('#load-deck-modal-message').html('<span style="color: #ff6666;">No saved decks found.</span>');
+									$('#load-deck-modal-message').html('<span class="msg-error">No saved decks found.</span>');
 									$('#load-deck-list').html('');
 								} else {
 									PopulateLoadDeckModal(allDecks);
@@ -1739,12 +1738,12 @@
 						  function ConfirmImportDeckFromNRDB() {
 							var url = $('#import-nrdb-modal-input').val().trim();
 							if (!url) {
-								$('#import-nrdb-modal-message').html('<span style="color: #ff6666;">Please enter a NetrunnerDB deck URL.</span>');
+								$('#import-nrdb-modal-message').html('<span class="msg-error">Please enter a NetrunnerDB deck URL.</span>');
 								return;
 							}
 							var m = url.match(/decklist\/([0-9a-f\-]+)/i);
 							if (!m) {
-								$('#import-nrdb-modal-message').html('<span style="color: #ff6666;">Could not extract deck UUID from URL.</span>');
+								$('#import-nrdb-modal-message').html('<span class="msg-error">Could not extract deck UUID from URL.</span>');
 								return;
 							}
 							var uuid = m[1];
@@ -1754,7 +1753,7 @@
 								try {
 									var entry = (resp && resp.data && resp.data[0]) ? resp.data[0] : null;
 									if (!entry) {
-										$('#import-nrdb-modal-message').html('<span style="color: #ff6666;">Decklist not found.</span>');
+										$('#import-nrdb-modal-message').html('<span class="msg-error">Decklist not found.</span>');
 										return;
 									}
 									var cardsObj = entry.cards || {};
@@ -1769,7 +1768,7 @@
 										var importedSide = window.cardCodeLookup[firstCardCode].side_code;
 										if ((currentMode === "corp" && importedSide === "runner") || 
 										    (currentMode === "runner" && importedSide === "corp")) {
-											$('#import-nrdb-modal-message').html('<span style="color: #ff6666;">Cannot import ' + importedSide + ' deck. You are in ' + currentMode + ' mode. Click on "Set as Opponent" to switch sides.</span>');
+											$('#import-nrdb-modal-message').html('<span class="msg-error">Cannot import ' + importedSide + ' deck. You are in ' + currentMode + ' mode. Click on "Set as Opponent" to switch sides.</span>');
 											return;
 										}
 									}
@@ -1840,18 +1839,18 @@
 									$("#deck").prop("rows", lines.length); //resize textarea height to fit
 									Parse();
 									// Show success message and close modal
-									$('#import-nrdb-modal-message').html('<span style="color: #33ff33;">Deck imported successfully!</span>');
+									$('#import-nrdb-modal-message').html('<span class="msg-ok">Deck imported successfully!</span>');
 									setTimeout(function() {
 										$('#import-nrdb-modal').css('display', 'none');
 										$('#import-nrdb-modal-message').html('');
 									}, 2000);
 								} catch(e) {
 									console.error(e);
-									$('#import-nrdb-modal-message').html('<span style="color: #ff6666;">Error importing deck</span>');
+									$('#import-nrdb-modal-message').html('<span class="msg-error">Error importing deck</span>');
 								}
 							 })
 							 .fail(function(){
-								$('#import-nrdb-modal-message').html('<span style="color: #ff6666;">Failed to fetch decklist from NRDB</span>');
+								$('#import-nrdb-modal-message').html('<span class="msg-error">Failed to fetch decklist from NRDB</span>');
 							 });
 						  }
 
@@ -2245,7 +2244,7 @@
 				$("#output").html(validityOutput);
 				$("#launch").prop("disabled", false);
 			  }
-		  $("#launch").html("PLAY<br>DECK");
+		  $("#launch").html("Play deck");
 		  UpdateLaunchStrings();
 		  //update opponent image (accordion restored)
 		  if (opponentdeckimg != "") {
@@ -2285,10 +2284,6 @@
 
 
 	<body onload="Init();">
-		<script>
-		// Apply CRT setting immediately to avoid flash of effects
-		(function(){try{var s=localStorage.getItem('chiriboga-settings');if(s){var p=JSON.parse(s);if(p.crtEffects===false)document.body.classList.add('no-crt');}}catch(e){}})();
-		</script>
 		<!-- Loading Overlay - hidden when page is ready -->
 		<div id="loading-overlay">
 			<div class="loading-text">Loading<span class="loading-dots"></span></div>
@@ -2309,43 +2304,40 @@
 		</script>
 		<div id="contentcontainer">
 			<div id="dataentry">
-				<div class="leftrow toprow">
-					<select id="identityselect"></select>
-					<select id="preconselect">
-						<option value="-1">Load Precon Deck</option>
+				<header class="page-bar">
+					<button id="exittomenu" onclick="window.location.href='index.php';" class="button" type="button">Menu</button>
+					<h1 class="page-title">Deck builder</h1>
+				</header>
+				<div class="leftrow toprow identity-panel">
+					<select id="identityselect" aria-label="Identity"></select>
+					<select id="preconselect" aria-label="Precon deck">
+						<option value="-1">Load precon deck</option>
 					</select>
-					<img id="identity" src="images/glow_outline.png">
+					<img id="identity" src="images/glow_outline.png" alt="Identity">
 					<div class="rightpart">
 						<div id="output">
 						</div>
 						<div id="opponentid"></div>
 					</div>
 				</div>
-			<div class="leftrow buttons">
-				<button id="launch" class="button button-red" onclick="window.location.href=$(this).prop('href');">PLAY<br>DECK</button>
-				<button id="opponent" class="button" onclick="window.location.href=$(this).prop('href');">SET AS OPPONENT</button>
-				<button id="randomdeck" onclick="GenerateRandomDeck();" class="button">RANDOM<br>DECK</button>
-				<button id="cleardeck" onclick="ClearDeck();" class="button">CLEAR<br>DECK</button>
-				<button id="sortdeck" onclick="CycleSort();" class="button">SORT BY:<br>ID</button>
-				<button id="filterdeck" onclick="CycleFilter();" class="button">FILTER:<br>ALL CARDS</button>
-				<button id="togglecards" onclick="ToggleOtherCards();" class="button">HIDE UNSELECTED</button>
-				<button id="exittomenu" onclick="window.location.href='index.php';" class="button">BACK TO MENU</button>
-			</div>
-				<div class="leftrow toprow">
-					<div class="deck-heading">CURRENT DECK:</div>
-					<textarea id="deck" spellcheck="false" cols="30" style="width:100%;"></textarea>
-					<div style="margin-top:8px;">
-						<button id="savedeck" class="button" type="button">Save Deck</button>
-					</div>
-					<div style="margin-top:8px;">
-						<button id="loaddeck" class="button" type="button" style="display:none;">Load Deck</button>
-					</div>
-					<div style="margin-top:8px;">
-						<button id="importdeckfromNRDB" class="button" type="button">Import Deck from NRDB</button>
-					</div>
-					<br/>
+				<div class="leftrow buttons">
+					<button id="launch" class="button button-red" onclick="window.location.href=$(this).prop('href');">Play deck</button>
+					<button id="opponent" class="button" onclick="window.location.href=$(this).prop('href');">Set as opponent</button>
+					<button id="randomdeck" onclick="GenerateRandomDeck();" class="button">Random deck</button>
+					<button id="cleardeck" onclick="ClearDeck();" class="button">Clear deck</button>
+					<button id="sortdeck" onclick="CycleSort();" class="button"><small>Sort</small>ID</button>
+					<button id="filterdeck" onclick="CycleFilter();" class="button"><small>Filter</small>All cards</button>
+					<button id="togglecards" onclick="ToggleOtherCards();" class="button">Hide unselected</button>
 				</div>
-				<br/>
+				<div class="leftrow toprow deck-panel">
+					<div class="deck-heading">Current deck</div>
+					<textarea id="deck" spellcheck="false" cols="30" aria-label="Current deck"></textarea>
+					<div class="deck-actions">
+						<button id="savedeck" class="button" type="button">Save deck</button>
+						<button id="loaddeck" class="button" type="button" style="display:none;">Load deck</button>
+						<button id="importdeckfromNRDB" class="button" type="button">Import from NRDB</button>
+					</div>
+				</div>
 			</div>
 			<div id="cardcontainer">
 			</div>
@@ -2353,7 +2345,7 @@
 		<!-- Lightbox container for enlarged card view -->
 		<div id="lightbox">
 			<div id="lightbox-content">
-				<span id="lightbox-close">[CLOSE]</span>
+				<span id="lightbox-close" aria-label="Close">Close</span>
 				<span id="lightbox-prev" aria-label="Previous">&#8249;</span>
 				<span id="lightbox-next" aria-label="Next">&#8250;</span>
 				<div id="lightbox-body">
@@ -2367,15 +2359,15 @@
 			<div class="solo-menu">
 				<span id="save-deck-close-btn" class="menu-close">✕</span>
 				<div class="solo-logo">
-					<h1 class="logo-text" style="color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark);">SAVE DECK</h1>
+					<h1 class="logo-text">Save deck</h1>
 				</div>
-				<div style="color:var(--crt-green); font-family:monospace; font-size:14px; text-align:center; padding:20px; line-height:1.6;">
-					<p style="margin-bottom:16px;">Your decks are saved locally in your browser. It won't sync across devices and can be cleared if you reset your browser data.</p>
-					<input id="save-deck-modal-input" type="text" placeholder="Enter deck name" style="width:80%; padding:8px; margin:12px auto; display:block; background:var(--bg-dark); border:1px solid var(--border-green); color:var(--crt-green); border-radius:6px; font-family:monospace;">
-					<div id="save-deck-modal-message" style="margin:12px 0; min-height:20px;"></div>
-					<div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
-						<button id="save-deck-confirm-btn" class="button" style="flex:0 1 120px;">SAVE</button>
-					</div>
+				<div class="dialog-body">
+					<p>Decks are saved in this browser only. They don't sync across devices and are lost if you clear your browser data.</p>
+					<input id="save-deck-modal-input" type="text" placeholder="Deck name" autocomplete="off">
+					<div id="save-deck-modal-message" class="dialog-message"></div>
+				</div>
+				<div class="dialog-actions">
+					<button id="save-deck-confirm-btn" class="button primary">Save</button>
 				</div>
 			</div>
 		</div>
@@ -2384,11 +2376,11 @@
 			<div class="solo-menu">
 				<span id="load-deck-close-btn" class="menu-close">✕</span>
 				<div class="solo-logo">
-					<h1 class="logo-text" style="color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark);">LOAD DECK</h1>
+					<h1 class="logo-text">Load deck</h1>
 				</div>
-				<div style="color:var(--crt-green); font-family:monospace; font-size:14px; padding:20px;">
-					<div id="load-deck-list" style="max-height:400px; overflow-y:auto; margin-bottom:16px;"></div>
-					<div id="load-deck-modal-message" style="text-align:center; margin:12px 0; min-height:20px;"></div>
+				<div class="dialog-body">
+					<div id="load-deck-list"></div>
+					<div id="load-deck-modal-message" class="dialog-message"></div>
 				</div>
 			</div>
 		</div>
@@ -2396,16 +2388,14 @@
 		<div id="delete-confirm-modal" class="modal" style="z-index: 20;">
 			<div class="solo-menu" style="max-width:400px;">
 				<div class="solo-logo">
-					<h1 class="logo-text" style="color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark);">CONFIRM DELETE</h1>
+					<h1 class="logo-text">Delete deck?</h1>
 				</div>
-				<div style="color:var(--crt-green); font-family:monospace; font-size:14px; text-align:center; padding:20px; line-height:1.6;">
-					<p style="margin-bottom:16px;">Are you sure you want to delete:</p>
-					<p style="margin-bottom:20px; font-weight:bold;" id="delete-confirm-deck-name"></p>
-					<p style="margin-bottom:20px; font-size:12px; color:var(--crt-green-muted);">This action cannot be undone.</p>
-					<div style="display:flex; gap:10px; justify-content:center;">
-						<button id="delete-confirm-yes-btn" class="button" style="flex:0 1 100px; background:var(--bg-dark); border-color:#ff6666; color:#ff6666;">DELETE</button>
-						<button id="delete-confirm-no-btn" class="button" style="flex:0 1 100px;">CANCEL</button>
-					</div>
+				<div class="dialog-body">
+					<p><strong id="delete-confirm-deck-name"></strong> will be deleted. This can't be undone.</p>
+				</div>
+				<div class="dialog-actions row">
+					<button id="delete-confirm-no-btn" class="button">Cancel</button>
+					<button id="delete-confirm-yes-btn" class="button button-red">Delete</button>
 				</div>
 			</div>
 		</div>
@@ -2414,15 +2404,15 @@
 			<div class="solo-menu">
 				<span id="import-nrdb-close-btn" class="menu-close">✕</span>
 				<div class="solo-logo">
-					<h1 class="logo-text" style="color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark);">IMPORT FROM NRDB</h1>
+					<h1 class="logo-text">Import from NetrunnerDB</h1>
 				</div>
-				<div style="color:var(--crt-green); font-family:monospace; font-size:14px; text-align:center; padding:20px; line-height:1.6;">
-					<p style="margin-bottom:16px;">Paste a NetrunnerDB deck URL:</p>
-					<input id="import-nrdb-modal-input" type="text" placeholder="https://netrunnerdb.com/decklist/..." style="width:90%; padding:8px; margin:12px auto; display:block; background:var(--bg-dark); border:1px solid var(--border-green); color:var(--crt-green); border-radius:6px; font-family:monospace;">
-					<div id="import-nrdb-modal-message" style="margin:12px 0; min-height:20px;"></div>
-					<div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
-						<button id="import-nrdb-confirm-btn" class="button" style="flex:0 1 120px;">IMPORT</button>
-					</div>
+				<div class="dialog-body">
+					<p>Paste a NetrunnerDB deck link.</p>
+					<input id="import-nrdb-modal-input" type="text" placeholder="https://netrunnerdb.com/decklist/..." autocomplete="off" inputmode="url">
+					<div id="import-nrdb-modal-message" class="dialog-message"></div>
+				</div>
+				<div class="dialog-actions">
+					<button id="import-nrdb-confirm-btn" class="button primary">Import</button>
 				</div>
 			</div>
 		</div>

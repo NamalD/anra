@@ -475,6 +475,7 @@ input[type="checkbox"]:disabled {
 .button.primary,
 .button.button-red,
 #footer #footerbutton-n,
+#footer #footerbutton-continue,
 #footer #resolvechoice-0:only-of-type {
   background: var(--accent);
   border-color: transparent;
@@ -483,20 +484,23 @@ input[type="checkbox"]:disabled {
 }
 .button.primary img.icon,
 .button.button-red img.icon,
-#footer #footerbutton-n img.icon {
+#footer #footerbutton-n img.icon,
+#footer #footerbutton-continue img.icon {
   filter: brightness(0);
 }
 @media (hover: hover) {
   .button.primary:hover:not(:disabled),
   .button.button-red:hover:not(:disabled),
-  #footer #footerbutton-n:hover:not(:disabled) {
+  #footer #footerbutton-n:hover:not(:disabled),
+  #footer #footerbutton-continue:hover:not(:disabled) {
     background: var(--accent-strong);
     border-color: transparent;
   }
 }
 .button.primary:active:not(:disabled),
 .button.button-red:active:not(:disabled),
-#footer #footerbutton-n:active:not(:disabled) {
+#footer #footerbutton-n:active:not(:disabled),
+#footer #footerbutton-continue:active:not(:disabled) {
   background: var(--accent-strong);
 }
 
@@ -1819,6 +1823,42 @@ canvas {
     height: 38px !important;
     background-size: 100% 100% !important;
   }
+}
+
+/* Turn banner (AnnounceTurn in utility.js) */
+#turn-banner {
+  position: fixed;
+  top: calc(76px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 4;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-lg);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -12px);
+}
+#turn-banner.mine {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--on-accent);
+}
+#turn-banner.show {
+  animation: turn-banner 1700ms var(--ease) forwards;
+}
+@keyframes turn-banner {
+  0% { opacity: 0; transform: translate(-50%, -12px) scale(0.9); }
+  14% { opacity: 1; transform: translate(-50%, 0) scale(1.04); }
+  22% { transform: translate(-50%, 0) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -8px) scale(0.98); }
 }
 
 /* Respect the system "reduce motion" setting */

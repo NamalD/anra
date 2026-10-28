@@ -266,20 +266,30 @@
 				preconDecks.push(deck);
 			}
 
+			// Credit icon used in dialog text and buttons
+			function CreditIcon() {
+				return '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon credit-icon" alt="credits">';
+			}
+
+			// Right-hand side of an option button: cost and, optionally, a success chance
+			function OptionMeta(cost, chance) {
+				var html = '<span class="option-meta"><span class="option-cost">' + cost + CreditIcon() + '</span>';
+				if (chance !== undefined) html += '<span class="option-chance">' + chance + '%</span>';
+				return html + '</span>';
+			}
+
 			// Function to show gauntlet welcome modal
 			function ShowGauntletWelcomeModal(gauntletLength) {
-				var welcomeHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center;">';
-				welcomeHtml += '<div class="solo-logo" style="width: 100%;">';
-				welcomeHtml += '<h1 class="logo-text" style="text-align: center; color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark);">WELCOME TO<br>THE GAUNTLET</h1>';
-				welcomeHtml += '</div>';
-				welcomeHtml += '<div style="color: var(--crt-red); font-family: monospace; padding: 20px; text-align: center; width: 100%; max-width: 500px;">';
+				var welcomeHtml = '<div class="solo-menu">';
+				welcomeHtml += '<div class="solo-logo"><h1 class="logo-text">Welcome to the Gauntlet</h1></div>';
+				welcomeHtml += '<div class="dialog-body">';
 				welcomeHtml += '<p>In this mode, you will face ' + gauntletLength + ' randomly selected decks. (The Gauntlet length can be changed in the settings before launch.)</p>';
-				welcomeHtml += '<p style="margin-top: 20px;">Build a deck from a randomized limited card pool and defeat them to complete the Gauntlet.</p>';
-				welcomeHtml += '<p style="margin-top: 20px;">Every agenda point that you steal wins you more credits, but every agenda point that the Corp scores costs you some of those credits.</p>';							
-				welcomeHtml += '<p style="margin-top: 20px;">After your first win, each opponent will receive special starting perks. You can hack them to remove these.</p>';					
-				welcomeHtml += '<p style="margin-top: 20px;">Start by buying card packs from the shop to build your deck. Good luck!</p>';
+				welcomeHtml += '<p>Build a deck from a randomized limited card pool and defeat them to complete the Gauntlet.</p>';
+				welcomeHtml += '<p>Every agenda point that you steal wins you more credits, but every agenda point that the Corp scores costs you some of those credits.</p>';
+				welcomeHtml += '<p>After your first win, each opponent will receive special starting perks. You can hack them to remove these.</p>';
+				welcomeHtml += '<p>Start by buying card packs from the shop to build your deck. Good luck!</p>';
 				welcomeHtml += '</div>';
-				welcomeHtml += '<div style="display: flex; justify-content: center; margin-top: 0px; width: 100%;"><button class="button" onclick="CloseGauntletWelcomeModal();">CONTINUE</button></div>';
+				welcomeHtml += '<div class="dialog-actions"><button class="button primary" onclick="CloseGauntletWelcomeModal();">Continue</button></div>';
 				welcomeHtml += '</div>';
 
 				var modal = document.getElementById('gauntlet-welcome-modal');
@@ -297,54 +307,50 @@
 			}
 
 			function ShowCongratulationsModal(creditsWon, creditsWonText) {
-				var congratsHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center;">';
-				congratsHtml += '<div class="solo-logo" style="width: 100%;">';
-				congratsHtml += '<h1 class="logo-text" style="text-align: center; color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark);">NICE JOB!</h1>';
-				congratsHtml += '</div>';
-				congratsHtml += '<div style="color: var(--crt-green); font-family: monospace; padding: 20px; text-align: left; width: 100%; max-width: 400px;">';
-				
+				var congratsHtml = '<div class="solo-menu">';
+				congratsHtml += '<div class="solo-logo"><h1 class="logo-text is-success">Nice job!</h1></div>';
+				congratsHtml += '<div class="dialog-body">';
+
 				// Parse and display the breakdown
 				if (creditsWonText && creditsWonText.length > 0) {
 					var lines = creditsWonText.split('\n');
-					congratsHtml += '<div style="border: 1px solid var(--crt-green); padding: 15px; margin-bottom: 15px; background: rgba(0, 40, 0, 0.3);">';
+					congratsHtml += '<div class="ledger">';
 					for (var i = 0; i < lines.length; i++) {
 						var line = lines[i];
+						if (!line) continue;
 						var isTotal = line.indexOf('Total:') === 0;
 						var isMinimum = line.indexOf('(Minimum') === 0;
-						
+						var parts = line.split(': ');
+
 						if (isTotal) {
 							// Total line - make it stand out
-							congratsHtml += '<div style="border-top: 1px solid var(--crt-green); margin-top: 10px; padding-top: 10px; font-size: 16px; font-weight: bold; color: var(--crt-green);">' + line + '</div>';
+							congratsHtml += '<div class="ledger-row ledger-total"><span>' + parts[0] + '</span><span>' + parts.slice(1).join(': ') + '</span></div>';
 						} else if (isMinimum) {
 							// Minimum credits note
-							congratsHtml += '<div style="font-size: 12px; color: var(--crt-green-muted); font-style: italic;">' + line + '</div>';
+							congratsHtml += '<div class="ledger-note">' + line + '</div>';
 						} else {
 							// Regular line - check for positive/negative
-							var color = 'var(--crt-green)';
+							var valueClass = 'ledger-value';
 							if (line.indexOf(': -') !== -1) {
-								color = 'var(--crt-red)';
+								valueClass += ' negative';
 							} else if (line.indexOf(': +') !== -1) {
-								color = 'var(--crt-green)';
+								valueClass += ' positive';
 							}
-							congratsHtml += '<div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px;">';
-							var parts = line.split(': ');
 							if (parts.length === 2) {
-								congratsHtml += '<span style="color: var(--crt-green-muted);">' + parts[0] + '</span>';
-								congratsHtml += '<span style="color: ' + color + '; font-weight: bold;">' + parts[1] + '</span>';
+								congratsHtml += '<div class="ledger-row"><span>' + parts[0] + '</span><span class="' + valueClass + '">' + parts[1] + '</span></div>';
 							} else {
-								congratsHtml += '<span style="color: ' + color + ';">' + line + '</span>';
+								congratsHtml += '<div class="ledger-row"><span class="' + valueClass + '">' + line + '</span></div>';
 							}
-							congratsHtml += '</div>';
 						}
 					}
 					congratsHtml += '</div>';
 				} else {
 					// Fallback if no breakdown text
-					congratsHtml += '<p style="font-size: 18px; font-weight: bold; text-align: center;">You have acquired ' + creditsWon + ' credits</p>';
+					congratsHtml += '<p>You have acquired <strong>' + creditsWon + ' credits</strong>.</p>';
 				}
-				
+
 				congratsHtml += '</div>';
-				congratsHtml += '<div style="display: flex; justify-content: center; margin-top: 0px; width: 100%;"><button class="button" onclick="CloseCongratulationsModal();">CONTINUE</button></div>';
+				congratsHtml += '<div class="dialog-actions"><button class="button primary" onclick="CloseCongratulationsModal();">Continue</button></div>';
 				congratsHtml += '</div>';
 
 				var modal = document.getElementById('gauntlet-congratulations-modal');
@@ -445,12 +451,10 @@
 					return oppNum === 4 || oppNum === 8 || oppNum === 12;
 				}
 				
-				var modalHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center;">';
-				modalHtml += '<div class="solo-logo" style="width: 100%;">';
-				modalHtml += '<h1 class="logo-text" style="text-align: center; color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark); font-size: 28px;">SELECT NEXT OPPONENT</h1>';
-				modalHtml += '</div>';
-				modalHtml += '<div class="select-opponent-gallery" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 20px; max-width: 500px;">';
-				
+				var modalHtml = '<div class="solo-menu">';
+				modalHtml += '<div class="solo-logo"><h1 class="logo-text">Select next opponent</h1></div>';
+				modalHtml += '<div class="select-opponent-gallery">';
+
 				for (var i = 0; i < gauntletOpponents.length; i++) {
 					var opp = gauntletOpponents[i];
 					var oppIdentityId = opp.identity;
@@ -464,13 +468,13 @@
 							oppName = cardSet[oppIdentityId].title || 'Unknown';
 						}
 					}
-					
+
 					var isDefeated = opp.hasbeendefeated === true;
 					var isUnlocked = isOpponentUnlocked(i, gauntletOpponents);
 					var isBoss = isBossOpponent(i);
 					var isLocked = !isUnlocked && !isDefeated;
-					
-					// Determine classes and styles
+
+					// State classes drive the look (see decks.css)
 					var itemClasses = 'select-opponent-item';
 					var imgClasses = 'select-opponent-img';
 					if (isDefeated) {
@@ -485,26 +489,17 @@
 						itemClasses += ' boss';
 						imgClasses += ' boss';
 					}
-					
+
 					var clickHandler = (isDefeated || isLocked) ? '' : ' onclick="SelectOpponent(' + i + ');"';
-					var cursorStyle = (isDefeated || isLocked) ? 'cursor: default;' : 'cursor: pointer;';
-					
-					// Boss styling for image border
-					var imgBorderStyle = isBoss ? 'border: 2px solid var(--crt-red); box-shadow: 0 0 8px var(--glow-red);' : '';
-					
-					// Name styling - red and bold for bosses
-					var nameColor = isBoss ? 'color: var(--crt-red); font-weight: bold;' : 'color: var(--crt-green);';
-					
-					modalHtml += '<div class="' + itemClasses + '" style="display: flex; flex-direction: column; align-items: center; ' + cursorStyle + '"' + clickHandler + '>';
-					modalHtml += '<img class="' + imgClasses + '" src="' + oppImgSrc + '" style="width: 90px; height: auto; border-radius: 6px; transition: transform 0.2s ease, box-shadow 0.2s ease; ' + imgBorderStyle + '"/>';
-					modalHtml += '<span class="select-opponent-name" style="margin-top: 6px; font-size: 11px; ' + nameColor + ' text-align: center; max-width: 90px; word-wrap: break-word; line-height: 1.2;">' + oppName + '</span>';
+
+					modalHtml += '<div class="' + itemClasses + '"' + clickHandler + '>';
+					modalHtml += '<img class="' + imgClasses + '" src="' + oppImgSrc + '" alt=""/>';
+					modalHtml += '<span class="select-opponent-name">' + oppName + '</span>';
 					modalHtml += '</div>';
 				}
-				
+
 				modalHtml += '</div>';
-				modalHtml += '<div style="display: flex; justify-content: center; margin-top: 10px; width: 100%;">';
-				modalHtml += '<button class="button" onclick="CloseSelectOpponentModal();">CANCEL</button>';
-				modalHtml += '</div>';
+				modalHtml += '<div class="dialog-actions"><button class="button" onclick="CloseSelectOpponentModal();">Cancel</button></div>';
 				modalHtml += '</div>';
 				
 				var modal = document.getElementById('select-opponent-modal');
@@ -656,12 +651,10 @@
 					return oppNum === 4 || oppNum === 8 || oppNum === 12;
 				}
 				
-				var modalHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center;">';
-				modalHtml += '<div class="solo-logo" style="width: 100%;">';
-				modalHtml += '<h1 class="logo-text" style="text-align: center; color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark); font-size: 28px;">HACK<br>OPPONENT</h1>';
-				modalHtml += '</div>';
-				modalHtml += '<div class="hack-opponent-gallery" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 20px; max-width: 500px;">';
-				
+				var modalHtml = '<div class="solo-menu">';
+				modalHtml += '<div class="solo-logo"><h1 class="logo-text">Hack opponent</h1></div>';
+				modalHtml += '<div class="hack-opponent-gallery">';
+
 				for (var i = 0; i < gauntletOpponents.length; i++) {
 					var opp = gauntletOpponents[i];
 					var oppIdentityId = opp.identity;
@@ -675,13 +668,13 @@
 							oppName = cardSet[oppIdentityId].title || 'Unknown';
 						}
 					}
-					
+
 					var isDefeated = opp.hasbeendefeated === true;
 					var isUnlocked = isOpponentUnlocked(i, gauntletOpponents);
 					var isBoss = isBossOpponent(i);
 					var isLocked = !isUnlocked && !isDefeated;
-					
-					// Determine classes
+
+					// State classes drive the look (see decks.css)
 					var itemClasses = 'hack-opponent-item';
 					var imgClasses = 'hack-opponent-img';
 					if (isDefeated) {
@@ -696,26 +689,17 @@
 						itemClasses += ' boss';
 						imgClasses += ' boss';
 					}
-					
+
 					var clickHandler = (isDefeated || isLocked) ? '' : ' onclick="ShowHackOptionsForOpponent(' + i + ');"';
-					var cursorStyle = (isDefeated || isLocked) ? 'cursor: default;' : 'cursor: pointer;';
-					
-					// Boss styling for image border
-					var imgBorderStyle = isBoss ? 'border: 2px solid var(--crt-red); box-shadow: 0 0 8px var(--glow-red);' : '';
-					
-					// Name styling - red and bold for bosses
-					var nameColor = isBoss ? 'color: var(--crt-red); font-weight: bold;' : 'color: var(--crt-green);';
-					
-					modalHtml += '<div class="' + itemClasses + '" style="display: flex; flex-direction: column; align-items: center; ' + cursorStyle + '"' + clickHandler + '>';
-					modalHtml += '<img class="' + imgClasses + '" src="' + oppImgSrc + '" style="width: 90px; height: auto; border-radius: 6px; transition: transform 0.2s ease, box-shadow 0.2s ease; ' + imgBorderStyle + '"/>';
-					modalHtml += '<span class="hack-opponent-name" style="margin-top: 6px; font-size: 11px; ' + nameColor + ' text-align: center; max-width: 90px; word-wrap: break-word; line-height: 1.2;">' + oppName + '</span>';
+
+					modalHtml += '<div class="' + itemClasses + '"' + clickHandler + '>';
+					modalHtml += '<img class="' + imgClasses + '" src="' + oppImgSrc + '" alt=""/>';
+					modalHtml += '<span class="hack-opponent-name">' + oppName + '</span>';
 					modalHtml += '</div>';
 				}
-				
+
 				modalHtml += '</div>';
-				modalHtml += '<div style="display: flex; justify-content: center; margin-top: 10px; width: 100%;">';
-				modalHtml += '<button class="button" onclick="CloseHackOpponentsModal();">CLOSE</button>';
-				modalHtml += '</div>';
+				modalHtml += '<div class="dialog-actions"><button class="button" onclick="CloseHackOpponentsModal();">Close</button></div>';
 				modalHtml += '</div>';
 				
 				var modal = document.getElementById('hack-opponents-modal');
@@ -907,78 +891,66 @@
 				var decklistRevealed = opp.decklistRevealed === true;
 				var perkRevealed = opp.perkRevealed === true;
 				
-				// Icon filter for enabled/disabled states (matching shop)
-				var enabledIconFilter = 'invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg)';
-				var disabledIconFilter = 'brightness(0) saturate(100%) invert(0.6) sepia(80%) hue-rotate(8deg) saturate(0.7)';
-				
-				var modalHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center; width: 600px;">';
-				modalHtml += '<h1 class="logo-text" style="text-align: center; color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark); margin: 20px 0;">' + oppName.toUpperCase() + '</h1>';
-				modalHtml += '<div style="color: var(--crt-red); font-family: monospace; padding: 20px; text-align: center; width: 100%;">';
-				modalHtml += '<p>Current Credits: <span id="hack-credits">' + gauntletCredits + '</span><img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 0px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + enabledIconFilter + ';"></p>';
-				
+				var modalHtml = '<div class="solo-menu">';
+				modalHtml += '<div class="solo-logo"><h1 class="logo-text">' + oppName + '</h1></div>';
+				modalHtml += '<div class="dialog-body">';
+				modalHtml += '<div class="credits-pill"><span class="credits-label">Credits</span><span id="hack-credits">' + gauntletCredits + '</span>' + CreditIcon() + '</div>';
+
 				// Show current prepare hack bonus if active
 				if (prepareHackBonus > 0) {
-					modalHtml += '<p style="color: var(--crt-green); font-size: 12px;">Hack Prepared: +' + prepareHackBonus + '% to all success chances</p>';
+					modalHtml += '<span class="tag success">Hack prepared: +' + prepareHackBonus + '% to all success chances</span>';
 				}
-				
+
 				modalHtml += '</div>';
-				modalHtml += '<div id="hack-buttons" style="display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; padding: 20px; min-height: 200px;">';
-				
+				modalHtml += '<div id="hack-buttons" class="option-list">';
+
 				// PREPARE HACK button
 				var prepareHackBonusMin = config.prepareHackBonusMin || 5;
 				var prepareHackBonusMax = config.prepareHackBonusMax || 15;
-			var allHacksCompleted = decklistRevealed && (!hasPerk || perkRevealed);
-			var canAffordPrepare = !allHacksCompleted && (gauntletCredits >= prepareHackCost);
-			var prepareDisabled = (!allHacksCompleted && canAffordPrepare) ? '' : ' disabled';
-			var prepareStyle = (!allHacksCompleted && canAffordPrepare) ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-			var prepareIconFilter = (!allHacksCompleted && canAffordPrepare) ? enabledIconFilter : disabledIconFilter;
-			var prepareText = allHacksCompleted ? 'ALL HACKS COMPLETED' : 'PREPARE HACK: ' + prepareHackCost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + prepareIconFilter + ';">';
-			modalHtml += '<button class="button"' + prepareDisabled + ' onclick="PrepareHack(' + opponentIndex + ');" style="' + prepareStyle + '">' + prepareText + '</button>';
+				var allHacksCompleted = decklistRevealed && (!hasPerk || perkRevealed);
+				var canAffordPrepare = !allHacksCompleted && (gauntletCredits >= prepareHackCost);
+				var prepareDisabled = (!allHacksCompleted && canAffordPrepare) ? '' : ' disabled';
+				var prepareText = allHacksCompleted ? '<span>All hacks completed</span>' : '<span>Prepare hack</span>' + OptionMeta(prepareHackCost);
+				modalHtml += '<button class="button option"' + prepareDisabled + ' onclick="PrepareHack(' + opponentIndex + ');">' + prepareText + '</button>';
 				// VIEW DECKLIST button
 				if (decklistRevealed) {
-					modalHtml += '<button class="button" onclick="ViewOpponentDecklist(' + opponentIndex + ');" style="width: 100%;">VIEW DECKLIST [REVEALED]</button>';
+					modalHtml += '<button class="button option" onclick="ViewOpponentDecklist(' + opponentIndex + ');"><span>View decklist</span><span class="tag success">Revealed</span></button>';
 				} else {
 					var canAffordDecklist = gauntletCredits >= decklistCost;
 					var decklistDisabled = canAffordDecklist ? '' : ' disabled';
-					var decklistStyle = canAffordDecklist ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-					var decklistIconFilter = canAffordDecklist ? enabledIconFilter : disabledIconFilter;
-					modalHtml += '<button class="button"' + decklistDisabled + ' onclick="AttemptHackDecklist(' + opponentIndex + ');" style="' + decklistStyle + '">VIEW DECKLIST: ' + decklistCost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + decklistIconFilter + ';"> - ' + decklistChance + '% CHANCE</button>';
+					modalHtml += '<button class="button option"' + decklistDisabled + ' onclick="AttemptHackDecklist(' + opponentIndex + ');"><span>View decklist</span>' + OptionMeta(decklistCost, decklistChance) + '</button>';
 				}
-				
+
 				// VIEW PERK button
 				if (!hasPerk) {
-					modalHtml += '<button class="button" disabled style="width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;">NO PERK</button>';
+					modalHtml += '<button class="button option" disabled><span>No perk</span></button>';
 				} else if (perkRevealed) {
-					modalHtml += '<button class="button" onclick="ShowPerkInfo(' + opponentIndex + ');" style="width: 100%;">VIEW PERK [REVEALED]</button>';
+					modalHtml += '<button class="button option" onclick="ShowPerkInfo(' + opponentIndex + ');"><span>View perk</span><span class="tag success">Revealed</span></button>';
 				} else {
 					var canAffordPerk = gauntletCredits >= perkCost;
 					var perkDisabledAttr = canAffordPerk ? '' : ' disabled';
-					var perkStyle = canAffordPerk ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-					var perkIconFilter = canAffordPerk ? enabledIconFilter : disabledIconFilter;
-					modalHtml += '<button class="button"' + perkDisabledAttr + ' onclick="AttemptHackPerk(' + opponentIndex + ');" style="' + perkStyle + '">VIEW PERK: ' + perkCost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + perkIconFilter + ';"> - ' + perkChance + '% CHANCE</button>';
+					modalHtml += '<button class="button option"' + perkDisabledAttr + ' onclick="AttemptHackPerk(' + opponentIndex + ');"><span>View perk</span>' + OptionMeta(perkCost, perkChance) + '</button>';
 				}
-				
+
 				// DISABLE PERK button
 				if (!hasPerk) {
-					modalHtml += '<button class="button" disabled style="width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;">NO PERK TO DISABLE</button>';
+					modalHtml += '<button class="button option" disabled><span>No perk to disable</span></button>';
 				} else if (perkDisabled) {
-					modalHtml += '<button class="button" disabled style="width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;">PERK DISABLED</button>';
+					modalHtml += '<button class="button option" disabled><span>Perk disabled</span></button>';
 				} else {
 					var canAffordDisable = gauntletCredits >= actualDisableCost;
 					var disableDisabledAttr = canAffordDisable ? '' : ' disabled';
-					var disableStyle = canAffordDisable ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-					var disableIconFilter = canAffordDisable ? enabledIconFilter : disabledIconFilter;
-					modalHtml += '<button class="button"' + disableDisabledAttr + ' onclick="AttemptDisablePerk(' + opponentIndex + ');" style="' + disableStyle + '">DISABLE PERK: ' + actualDisableCost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + disableIconFilter + ';"> - ' + actualDisableChance + '% CHANCE</button>';
-					
+					modalHtml += '<button class="button option"' + disableDisabledAttr + ' onclick="AttemptDisablePerk(' + opponentIndex + ');"><span>Disable perk</span>' + OptionMeta(actualDisableCost, actualDisableChance) + '</button>';
+
 					// Warning about card loss risk
 					var cardLossChance = isBossPerk ? (config.bossHackCardLossPercentage || 40) : (config.regularHackCardLossPercentage || 25);
-					modalHtml += '<div style="color: var(--crt-red); font-family: monospace; font-size: 11px; text-align: center; margin-top: 5px; margin-bottom: 5px; padding: 5px; border: 1px solid var(--border-red-dark); background-color: rgba(80, 0, 0, 0.3);">';
-					modalHtml += '⚠ WARNING: Disabling perks risks card loss (' + cardLossChance + '% chance)';
-					modalHtml += '</div>';
+					modalHtml += '<div class="callout warning">Disabling a perk risks losing cards (' + cardLossChance + '% chance).</div>';
 				}
-				
-				modalHtml += '<button class="button" onclick="ShowHackOpponentsModal();" style="width: 100%;">BACK</button>';
-				modalHtml += '<button class="button" onclick="CloseHackOpponentsModal();" style="width: 100%;">CLOSE</button>';
+
+				modalHtml += '</div>';
+				modalHtml += '<div class="dialog-actions row">';
+				modalHtml += '<button class="button" onclick="ShowHackOpponentsModal();">Back</button>';
+				modalHtml += '<button class="button" onclick="CloseHackOpponentsModal();">Close</button>';
 				modalHtml += '</div>';
 				modalHtml += '</div>';
 				
@@ -1058,14 +1030,14 @@
 					SaveOpponentStateToURL();
 					UpdateLaunchStrings();
 					Parse(); // Update deck stats display to show new credit total
-					ShowHackResultModal(true, 'DECKLIST REVEALED', 'You successfully hacked into their systems and retrieved the decklist.', opponentIndex);
+					ShowHackResultModal(true, 'Decklist revealed', 'You successfully hacked into their systems and retrieved the decklist.', opponentIndex);
 				} else {
 					// Failure - record the failed chance for recovery bonus
 					failedHackChances[opponentIndex + '_decklist'] = effectiveChance;
 					SaveOpponentStateToURL();
 					UpdateLaunchStrings();
 					Parse(); // Update deck stats display to show new credit total
-					ShowHackResultModal(false, 'HACK FAILED', 'Your intrusion was detected and blocked. The chance has changed for your next attempt.', opponentIndex);
+					ShowHackResultModal(false, 'Hack failed', 'Your intrusion was detected and blocked. The chance has changed for your next attempt.', opponentIndex);
 				}
 			}
 			
@@ -1122,14 +1094,14 @@
 					UpdateLaunchStrings();
 					Parse(); // Update deck stats display to show new credit total
 					var perkName = GetPerkName(opp.startingPerk);
-					ShowHackResultModal(true, 'PERK REVEALED', 'You successfully breached their servers and revealed: "' + perkName + '".', opponentIndex);
+					ShowHackResultModal(true, 'Perk revealed', 'You successfully breached their servers and revealed: "' + perkName + '".', opponentIndex);
 				} else {
 					// Failure - record the failed chance for recovery bonus
 					failedHackChances[opponentIndex + '_perk'] = effectiveChance;
 					SaveOpponentStateToURL();
 					UpdateLaunchStrings();
 					Parse(); // Update deck stats display to show new credit total
-					ShowHackResultModal(false, 'HACK FAILED', 'Security protocols blocked your access. The chance has changed for your next attempt.', opponentIndex);
+					ShowHackResultModal(false, 'Hack failed', 'Security protocols blocked your access. The chance has changed for your next attempt.', opponentIndex);
 				}
 			}
 			
@@ -1179,14 +1151,14 @@
 					UpdateLaunchStrings();
 					Parse(); // Update deck stats display to show new credit total
 					var perkName = GetPerkName(opp.startingPerk);
-					ShowHackResultModalWithCardLoss(true, 'PERK DISABLED', 'You successfully breached their servers and disabled a "' + perkName + '" perk.', opponentIndex, lostCards);
+					ShowHackResultModalWithCardLoss(true, 'Perk disabled', 'You successfully breached their servers and disabled a "' + perkName + '" perk.', opponentIndex, lostCards);
 				} else {
 					// Failure - record the failed chance for recovery bonus
 					failedHackChances[opponentIndex + '_' + actionType] = effectiveChance;
 					SaveOpponentStateToURL();
 					UpdateLaunchStrings();
 					Parse(); // Update deck stats display to show new credit total
-					ShowHackResultModalWithCardLoss(false, 'HACK FAILED', 'Their security systems detected and removed the trojan you installed. The chance has changed for your next attempt.', opponentIndex, lostCards);
+					ShowHackResultModalWithCardLoss(false, 'Hack failed', 'Their security systems detected and removed the trojan you installed. The chance has changed for your next attempt.', opponentIndex, lostCards);
 				}
 			}
 			
@@ -1329,21 +1301,17 @@
 			
 			// Show hack result modal with card loss information
 			function ShowHackResultModalWithCardLoss(success, title, message, opponentIndex, lostCards) {
-				var color = success ? 'var(--crt-green)' : 'var(--crt-red)';
-				var glowColor = success ? 'var(--glow-green)' : 'var(--glow-red)';
-				var glowDark = success ? 'var(--glow-green-dark)' : 'var(--glow-red-dark)';
-				
-				var modalHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center; width: 600px;">';
-				modalHtml += '<h1 class="logo-text" style="text-align: center; color: ' + color + '; text-shadow: 0 0 5px ' + color + ', 0 0 15px ' + glowColor + ', 0 0 35px ' + glowDark + '; margin: 20px 0;">' + title + '</h1>';
-				modalHtml += '<div style="color: ' + color + '; font-family: monospace; padding: 20px; text-align: center; width: 100%;">';
+				var titleClass = success ? 'is-success' : 'is-danger';
+				var modalHtml = '<div class="solo-menu">';
+				modalHtml += '<div class="solo-logo"><h1 class="logo-text ' + titleClass + '">' + title + '</h1></div>';
+				modalHtml += '<div class="dialog-body">';
 				modalHtml += '<p>' + message + '</p>';
-				
 				// Show lost cards if any
 				if (lostCards && lostCards.length > 0) {
-					modalHtml += '<div style="margin-top: 15px; padding: 10px; border: 1px solid var(--crt-red); background-color: rgba(80, 0, 0, 0.3);">';
-					modalHtml += '<p style="color: var(--crt-red); font-weight: bold; margin-bottom: 10px;">⚠ COUNTERMEASURES DETECTED ⚠</p>';
-					modalHtml += '<p style="color: var(--crt-red);">The following cards were corrupted and lost:</p>';
-					modalHtml += '<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 15px 0;">';
+					modalHtml += '<div class="callout">';
+					modalHtml += '<span class="callout-title">Countermeasures detected</span>';
+					modalHtml += '<span>The following cards were corrupted and lost:</span>';
+					modalHtml += '<div class="thumb-grid">';
 					for (var i = 0; i < lostCards.length; i++) {
 						var cardId = lostCards[i].id;
 						var cardName = lostCards[i].name;
@@ -1351,18 +1319,17 @@
 						if (cardSet[cardId] && cardSet[cardId].imageFile) {
 							imgSrc = GetImagePath(cardSet[cardId].imageFile);
 						}
-						modalHtml += '<div style="display: flex; flex-direction: column; align-items: center; max-width: 100px;">';
-						modalHtml += '<img src="' + imgSrc + '" onclick="ShowLightbox(' + cardId + ');" style="width: 80px; height: auto; border: 2px solid var(--crt-red); border-radius: 4px; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform=\'scale(1.05)\'; this.style.boxShadow=\'0 0 10px var(--glow-red)\';" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'none\';" />';
-						modalHtml += '<span style="color: var(--crt-red); font-size: 10px; margin-top: 4px; text-align: center; word-wrap: break-word; max-width: 80px;">' + cardName + '</span>';
+						modalHtml += '<div class="thumb" onclick="ShowLightbox(' + cardId + ');">';
+						modalHtml += '<img src="' + imgSrc + '" alt=""/>';
+						modalHtml += '<span>' + cardName + '</span>';
 						modalHtml += '</div>';
 					}
 					modalHtml += '</div>';
 					modalHtml += '</div>';
 				}
-				
 				modalHtml += '</div>';
-				modalHtml += '<div id="hack-buttons" style="display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; padding: 20px; min-height: 50px;">';
-				modalHtml += '<button class="button" onclick="ShowHackOptionsForOpponent(' + opponentIndex + ');" style="width: 100%;">CONTINUE</button>';
+				modalHtml += '<div id="hack-buttons" class="dialog-actions">';
+				modalHtml += '<button class="button primary" onclick="ShowHackOptionsForOpponent(' + opponentIndex + ');">Continue</button>';
 				modalHtml += '</div>';
 				modalHtml += '</div>';
 				
@@ -1404,17 +1371,14 @@
 			
 			// Show hack result modal
 			function ShowHackResultModal(success, title, message, opponentIndex) {
-				var color = success ? 'var(--crt-green)' : 'var(--crt-red)';
-				var glowColor = success ? 'var(--glow-green)' : 'var(--glow-red)';
-				var glowDark = success ? 'var(--glow-green-dark)' : 'var(--glow-red-dark)';
-				
-				var modalHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center; width: 600px;">';
-				modalHtml += '<h1 class="logo-text" style="text-align: center; color: ' + color + '; text-shadow: 0 0 5px ' + color + ', 0 0 15px ' + glowColor + ', 0 0 35px ' + glowDark + '; margin: 20px 0;">' + title + '</h1>';
-				modalHtml += '<div style="color: ' + color + '; font-family: monospace; padding: 20px; text-align: center; width: 100%;">';
+				var titleClass = success ? 'is-success' : 'is-danger';
+				var modalHtml = '<div class="solo-menu">';
+				modalHtml += '<div class="solo-logo"><h1 class="logo-text ' + titleClass + '">' + title + '</h1></div>';
+				modalHtml += '<div class="dialog-body">';
 				modalHtml += '<p>' + message + '</p>';
 				modalHtml += '</div>';
-				modalHtml += '<div id="hack-buttons" style="display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; padding: 20px; min-height: 50px;">';
-				modalHtml += '<button class="button" onclick="ShowHackOptionsForOpponent(' + opponentIndex + ');" style="width: 100%;">CONTINUE</button>';
+				modalHtml += '<div id="hack-buttons" class="dialog-actions">';
+				modalHtml += '<button class="button primary" onclick="ShowHackOptionsForOpponent(' + opponentIndex + ');">Continue</button>';
 				modalHtml += '</div>';
 				modalHtml += '</div>';
 				
@@ -1456,27 +1420,21 @@
 				var perkDesc = perkDescriptions[basePerk] || 'Unknown effect.';
 				var isBoss = basePerk >= 4 && basePerk <= 6;
 				
-				var titleColor = isBoss ? 'var(--crt-red)' : 'var(--crt-green)';
-				var titleGlow = isBoss ? 'var(--glow-red)' : 'var(--glow-green)';
-				var titleGlowDark = isBoss ? 'var(--glow-red-dark)' : 'var(--glow-green-dark)';
-				
-				var modalHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center; width: 600px;">';
-				modalHtml += '<h1 class="logo-text" style="text-align: center; color: ' + titleColor + '; text-shadow: 0 0 5px ' + titleColor + ', 0 0 15px ' + titleGlow + ', 0 0 35px ' + titleGlowDark + '; margin: 20px 0;">' + perkName.toUpperCase() + '</h1>';
-				
+				var modalHtml = '<div class="solo-menu">';
+				modalHtml += '<div class="solo-logo"><h1 class="logo-text' + (isBoss ? ' is-danger' : '') + '">' + perkName + '</h1></div>';
+				modalHtml += '<div class="dialog-body">';
 				if (isBoss) {
-					modalHtml += '<div style="color: var(--crt-red); font-family: monospace; font-size: 12px; margin-bottom: 10px;">[BOSS PERK]</div>';
+					modalHtml += '<span class="tag danger">Boss perk</span>';
 				}
-				
-				modalHtml += '<div style="color: var(--crt-green); font-family: monospace; padding: 20px; text-align: center; width: 100%;">';
 				modalHtml += '<p>' + perkDesc + '</p>';
 				if (perkDisabled) {
-					modalHtml += '<p style="color: var(--crt-green); margin-top: 15px; font-weight: bold;">[ DISABLED ]</p>';
+					modalHtml += '<span class="tag success">Disabled</span>';
 				}
 				modalHtml += '</div>';
-				
-				modalHtml += '<div id="hack-buttons" style="display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; padding: 20px; min-height: 50px;">';
-				modalHtml += '<button class="button" onclick="ShowHackOptionsForOpponent(' + opponentIndex + ');" style="width: 100%;">BACK</button>';
-				modalHtml += '<button class="button" onclick="CloseHackOpponentsModal();" style="width: 100%;">CLOSE</button>';
+
+				modalHtml += '<div id="hack-buttons" class="dialog-actions row">';
+				modalHtml += '<button class="button" onclick="ShowHackOptionsForOpponent(' + opponentIndex + ');">Back</button>';
+				modalHtml += '<button class="button" onclick="CloseHackOpponentsModal();">Close</button>';
 				modalHtml += '</div>';
 				modalHtml += '</div>';
 				
@@ -1518,32 +1476,32 @@
 				});
 				
 				// Build the decklist HTML
-				var decklistHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center; width: 600px;">';
-				decklistHtml += '<h1 class="logo-text" style="text-align: center; color: var(--crt-green); text-shadow: 0 0 5px var(--crt-green), 0 0 15px var(--glow-green), 0 0 35px var(--glow-green-dark); margin: 20px 0;">' + oppName.toUpperCase() + '</h1>';
-				decklistHtml += '<div class="decklist-container" style="color: var(--crt-green); font-family: monospace; padding: 15px; width: 100%; max-height: 400px; overflow-y: auto; text-align: left;">';
-				
+				var decklistHtml = '<div class="solo-menu">';
+				decklistHtml += '<div class="solo-logo"><h1 class="logo-text">' + oppName + '</h1><div class="subtitle-line"><span class="subtitle-text">' + oppCards.length + ' cards</span></div></div>';
+				decklistHtml += '<div class="decklist-container">';
+
 				var currentType = '';
 				for (var j = 0; j < sortedCardIds.length; j++) {
 					var cardId = parseInt(sortedCardIds[j]);
 					var card = cardSet[cardId];
 					if (!card) continue;
-					
+
 					// Add type header if changed
-					var cardType = (card.cardType || 'Unknown').toUpperCase();
+					var cardType = card.cardType || 'Unknown';
+					cardType = cardType.charAt(0).toUpperCase() + cardType.slice(1);
 					if (cardType !== currentType) {
 						currentType = cardType;
-						decklistHtml += '<div style="color: var(--crt-green-muted); border-bottom: 1px solid var(--border-green); margin-top: 10px; margin-bottom: 5px; padding-bottom: 3px; font-size: 11px; letter-spacing: 1px;">' + cardType + '</div>';
+						decklistHtml += '<div class="decklist-type">' + cardType + '</div>';
 					}
-					
+
 					var count = cardCounts[cardId];
-					decklistHtml += '<div style="padding: 2px 0; font-size: 12px;">' + count + 'x ' + card.title + '</div>';
+					decklistHtml += '<div class="decklist-line"><span class="decklist-count">' + count + '×</span><span>' + card.title + '</span></div>';
 				}
-				
+
 				decklistHtml += '</div>';
-				decklistHtml += '<div style="color: var(--crt-green-muted); font-size: 11px; margin-top: 10px;">Total: ' + oppCards.length + ' cards</div>';
-				decklistHtml += '<div id="hack-buttons" style="display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; padding: 20px; min-height: 50px;">';
-				decklistHtml += '<button class="button" onclick="ShowHackOptionsForOpponent(' + opponentIndex + ');" style="width: 100%;">BACK</button>';
-				decklistHtml += '<button class="button" onclick="CloseHackOpponentsModal();" style="width: 100%;">CLOSE</button>';
+				decklistHtml += '<div id="hack-buttons" class="dialog-actions row">';
+				decklistHtml += '<button class="button" onclick="ShowHackOptionsForOpponent(' + opponentIndex + ');">Back</button>';
+				decklistHtml += '<button class="button" onclick="CloseHackOpponentsModal();">Close</button>';
 				decklistHtml += '</div>';
 				decklistHtml += '</div>';
 				
@@ -1572,99 +1530,54 @@
 				var buttonsDiv = document.getElementById('shop-buttons');
 				if (!buttonsDiv) return;
 				
-				// Rebuild pack button HTML
-				var newButtonsHtml = '';
-				
+				buttonsDiv.innerHTML = BuildShopButtonsHtml();
+			}
+
+			// Shop actions: packs, re-roll, sell extras, unlock identity, close
+			function BuildShopButtonsHtml() {
+				var html = '';
+
 				// Add buttons for selected packs
 				for (var i = 0; i < selectedShopPacks.length; i++) {
 					var pack = selectedShopPacks[i];
-					var canAfford = gauntletCredits >= pack.cost;
-					var packDisabled = canAfford ? '' : ' disabled';
-					var packStyle = canAfford ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-					var iconFilter = canAfford ? 'invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg)' : 'brightness(0) saturate(100%) invert(0.6) sepia(80%) hue-rotate(8deg) saturate(0.7)';
-					newButtonsHtml += '<button class="button" onclick="BuyCardPack(' + i + ');"' + packDisabled + ' style="' + packStyle + '">BUY ' + pack.name.toUpperCase() + ': ' + pack.cost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + iconFilter + ';"></button>';
+					var packDisabled = gauntletCredits >= pack.cost ? '' : ' disabled';
+					html += '<button class="button option" onclick="BuyCardPack(' + i + ');"' + packDisabled + '><span>Buy ' + pack.name + '</span>' + OptionMeta(pack.cost) + '</button>';
 				}
-				
+
 				// RE-ROLL PACKS button
 				var rerollCost = (gauntletConfig.shop && gauntletConfig.shop.rerollPacksCost) || 5;
-				var canAffordReroll = gauntletCredits >= rerollCost;
-				var rerollDisabled = canAffordReroll ? '' : ' disabled';
-				var rerollStyle = canAffordReroll ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-				var rerollIconFilter = canAffordReroll ? 'invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg)' : 'brightness(0) saturate(100%) invert(0.6) sepia(80%) hue-rotate(8deg) saturate(0.7)';
-				newButtonsHtml += '<button class="button" onclick="RerollShopPacks();"' + rerollDisabled + ' style="' + rerollStyle + '">RE-ROLL PACKS: ' + rerollCost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + rerollIconFilter + ';"></button>';
-				
+				var rerollDisabled = gauntletCredits >= rerollCost ? '' : ' disabled';
+				html += '<button class="button option" onclick="RerollShopPacks();"' + rerollDisabled + '><span>Re-roll packs</span>' + OptionMeta(rerollCost) + '</button>';
+
 				// SELL ALL EXTRA CARDS button - disable if no cards to sell
-				var hasCards = HasCardsToSell();
-				var sellDisabled = hasCards ? '' : ' disabled';
-				var sellStyle = hasCards ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-				newButtonsHtml += '<button class="button" onclick="SellExtraCards();"' + sellDisabled + ' style="' + sellStyle + '">SELL ALL EXTRA CARDS</button>';
-				
+				var sellDisabled = HasCardsToSell() ? '' : ' disabled';
+				html += '<button class="button option" onclick="SellExtraCards();"' + sellDisabled + '><span>Sell all extra cards</span></button>';
+
 				// UNLOCK IDENTITY button - disable if identity is already unlocked or can't afford
 				var unlockCost = (gauntletConfig.shop && gauntletConfig.shop.unlockIdentityCost) || 15;
 				var isIdentityLocked = $('#identityselect').prop('disabled');
-				var canAffordUnlock = gauntletCredits >= unlockCost;
-				var unlockAvailable = isIdentityLocked && canAffordUnlock;
+				var unlockAvailable = isIdentityLocked && gauntletCredits >= unlockCost;
 				var unlockDisabled = unlockAvailable ? '' : ' disabled';
-				var unlockStyle = unlockAvailable ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-				var unlockIconFilter = unlockAvailable ? 'invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg)' : 'brightness(0) saturate(100%) invert(0.6) sepia(80%) hue-rotate(8deg) saturate(0.7)';
-				newButtonsHtml += '<button class="button" onclick="UnlockIdentity();"' + unlockDisabled + ' style="' + unlockStyle + '">UNLOCK IDENTITY: ' + unlockCost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + unlockIconFilter + ';"></button>';
-				
-				newButtonsHtml += '<button class="button" onclick="CloseBuyCardsModal();" style="width: 100%;">CLOSE</button>';
-				
-				buttonsDiv.innerHTML = newButtonsHtml;
+				html += '<button class="button option" onclick="UnlockIdentity();"' + unlockDisabled + '><span>Unlock identity</span>' + OptionMeta(unlockCost) + '</button>';
+
+				html += '<button class="button" onclick="CloseBuyCardsModal();">Close</button>';
+				return html;
 			}
 
 			// Function to show the Buy/Sell Cards modal
 			function ShowBuyCardsModal() {
 				// Packs are already selected on page load
-				var buycardsHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center; width: 600px;">';
-				buycardsHtml += '<h1 class="logo-text" style="text-align: center; color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark); margin: 20px 0;">AESOP\'S PAWN SHOP</h1>';
-				buycardsHtml += '<div style="color: var(--crt-red); font-family: monospace; padding: 20px; text-align: center; width: 100%;">';
-				buycardsHtml += '<p>Current Credits: <span id="shop-credits">' + gauntletCredits + '</span><img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 0px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg);"></p>';
+				var buycardsHtml = '<div class="solo-menu">';
+				buycardsHtml += '<div class="solo-logo"><h1 class="logo-text">Aesop\'s Pawn Shop</h1></div>';
+				buycardsHtml += '<div class="dialog-body">';
+				buycardsHtml += '<div class="credits-pill"><span class="credits-label">Credits</span><span id="shop-credits">' + gauntletCredits + '</span>' + CreditIcon() + '</div>';
 				if (gauntletStrictPacks) {
-					buycardsHtml += '<p style="color: var(--crt-green); font-size: 11px; margin-top: 10px;">Strict Packs: Cards will match their pack\'s faction or type.</p>';
+					buycardsHtml += '<p class="dialog-note">Strict packs: cards will match their pack\'s faction or type.</p>';
 				} else {
-					buycardsHtml += '<p style="color: var(--crt-green); font-size: 11px; margin-top: 10px;">Pack names indicate what factions or card types you are more likely to find inside.</p>';
+					buycardsHtml += '<p class="dialog-note">Pack names indicate what factions or card types you are more likely to find inside.</p>';
 				}
 				buycardsHtml += '</div>';
-				buycardsHtml += '<div id="shop-buttons" style="display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; padding: 20px; min-height: 200px;">';
-				
-				// Add buttons for selected packs
-				for (var i = 0; i < selectedShopPacks.length; i++) {
-					var pack = selectedShopPacks[i];
-					var canAfford = gauntletCredits >= pack.cost;
-					var packDisabled = canAfford ? '' : ' disabled';
-					var packStyle = canAfford ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-					var iconFilter = canAfford ? 'invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg)' : 'brightness(0) saturate(100%) invert(0.6) sepia(80%) hue-rotate(8deg) saturate(0.7)';
-					buycardsHtml += '<button class="button" onclick="BuyCardPack(' + i + ');"' + packDisabled + ' style="' + packStyle + '">BUY ' + pack.name.toUpperCase() + ': ' + pack.cost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + iconFilter + ';"></button>';
-				}
-				
-				// RE-ROLL PACKS button
-				var rerollCost = (gauntletConfig.shop && gauntletConfig.shop.rerollPacksCost) || 5;
-				var canAffordReroll = gauntletCredits >= rerollCost;
-				var rerollDisabled = canAffordReroll ? '' : ' disabled';
-				var rerollStyle = canAffordReroll ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-				var rerollIconFilter = canAffordReroll ? 'invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg)' : 'brightness(0) saturate(100%) invert(0.6) sepia(80%) hue-rotate(8deg) saturate(0.7)';
-				buycardsHtml += '<button class="button" onclick="RerollShopPacks();"' + rerollDisabled + ' style="' + rerollStyle + '">RE-ROLL PACKS: ' + rerollCost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + rerollIconFilter + ';"></button>';
-				
-				// SELL ALL EXTRA CARDS button - disable if no cards to sell
-				var hasCards = HasCardsToSell();
-				var sellDisabled = hasCards ? '' : ' disabled';
-				var sellStyle = hasCards ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-				buycardsHtml += '<button class="button" onclick="SellExtraCards();"' + sellDisabled + ' style="' + sellStyle + '">SELL ALL EXTRA CARDS</button>';
-				
-				// UNLOCK IDENTITY button - disable if identity is already unlocked or can't afford
-				var unlockCost = (gauntletConfig.shop && gauntletConfig.shop.unlockIdentityCost) || 15;
-				var isIdentityLocked = $('#identityselect').prop('disabled');
-				var canAffordUnlock = gauntletCredits >= unlockCost;
-				var unlockAvailable = isIdentityLocked && canAffordUnlock;
-				var unlockDisabled = unlockAvailable ? '' : ' disabled';
-				var unlockStyle = unlockAvailable ? 'width: 100%;' : 'width: 100%; opacity: 0.6; border-color: var(--border-red-dark); color: var(--crt-red-muted); cursor: default; background-color: rgba(12,24,12,0.7) !important; pointer-events: none;';
-				var unlockIconFilter = unlockAvailable ? 'invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg)' : 'brightness(0) saturate(100%) invert(0.6) sepia(80%) hue-rotate(8deg) saturate(0.7)';
-				buycardsHtml += '<button class="button" onclick="UnlockIdentity();"' + unlockDisabled + ' style="' + unlockStyle + '">UNLOCK IDENTITY: ' + unlockCost + '<img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 2px; margin-bottom: 2px; height: 16px; display: inline-block; vertical-align: sub; filter: ' + unlockIconFilter + ';"></button>';
-				
-				buycardsHtml += '<button class="button" onclick="CloseBuyCardsModal();" style="width: 100%;">CLOSE</button>';
-				buycardsHtml += '</div>';
+				buycardsHtml += '<div id="shop-buttons" class="option-list">' + BuildShopButtonsHtml() + '</div>';
 				buycardsHtml += '</div>';
 
 				var modal = document.getElementById('buy-cards-modal');
@@ -1740,7 +1653,7 @@
 				
 				if (cardsToRemove.length === 0) {
 					var buttonsDiv = document.getElementById('shop-buttons');
-					buttonsDiv.innerHTML = '<p style="color: var(--crt-red);">No cards with more than 3 copies available to sell.</p><button class="button" onclick="BackToShop();" style="width: 100%; margin-top: 20px;">BACK TO SHOP</button>';
+					buttonsDiv.innerHTML = '<p class="dialog-note">No cards with more than 3 copies available to sell.</p><button class="button" onclick="BackToShop();">Back to shop</button>';
 					return;
 				}
 				
@@ -1752,20 +1665,20 @@
 				});
 				
 				// Build display list
-				var listHtml = '<div style="color: var(--crt-red); font-family: monospace; text-align: center; display: inline-block; margin: 0;">';
-				
+				var listHtml = '<ul class="plain-list">';
+
 				for (var i = 0; i < cardsToRemove.length; i++) {
 					var item = cardsToRemove[i];
 					var cardTitle = cardSet[item.cardId].title || 'Unknown Card';
-					listHtml += '<p style="margin: 5px 0;">' + item.excess + 'x ' + cardTitle + '</p>';
+					listHtml += '<li>' + item.excess + '× ' + cardTitle + '</li>';
 				}
-				
-				listHtml += '<p style="margin-top: 20px; color: var(--glow-red);"><strong>Sold for ' + totalCredits + ' <img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 0px; height: 16px; display: inline-block; vertical-align: sub; filter: invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg);"></strong></p>';
-				listHtml += '</div>';
-				
+
+				listHtml += '</ul>';
+				listHtml += '<p class="shop-summary">Sold for <strong>' + totalCredits + '</strong>' + CreditIcon() + '</p>';
+
 				// Find the buttons container and replace with sale info and BACK TO SHOP button
 				var buttonsDiv = document.getElementById('shop-buttons');
-				buttonsDiv.innerHTML = listHtml + '<button class="button" onclick="BackToShop();" style="width: 100%; margin-top: 20px;">BACK TO SHOP</button>';
+				buttonsDiv.innerHTML = listHtml + '<button class="button primary" onclick="BackToShop();">Back to shop</button>';
 				
 				// Remove excess cards from gauntletCardCounts
 				for (var i = 0; i < cardsToRemove.length; i++) {
@@ -2029,9 +1942,8 @@
 				});
 				
 				// Build display with card thumbnails
-				var listHtml = '<div style="text-align: center;">';
-				listHtml += '<p style="margin: 5px 0; color: var(--glow-red); font-weight: bold; font-size: 14px;">Added from ' + pack.name + ':</p>';
-				listHtml += '<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 15px 0;">';
+				var listHtml = '<p class="shop-summary">Added from <strong>' + pack.name + '</strong></p>';
+				listHtml += '<div class="thumb-grid large">';
 				
 				// Reset shop display cards
 				shopDisplayCardIds = [];
@@ -2051,18 +1963,15 @@
 					var cardTitle = cardSet[cardId].title || 'Unknown Card';
 					var imgSrc = GetImagePath(cardSet[cardId].imageFile || '');
 					
-					listHtml += '<div style="position: relative; text-align: center; cursor: pointer;" onclick="ShowLightbox(' + cardId + ');">';
-					listHtml += '<img src="' + imgSrc + '" alt="' + cardTitle + '" style="width: 120px; height: auto; border: 2px solid var(--glow-green); border-radius: 4px; transition: transform 0.2s; opacity: 0.9;" onmouseover="this.style.transform=\'scale(1.05)\'; this.style.opacity=\'1\';" onmouseout="this.style.transform=\'scale(1)\'; this.style.opacity=\'0.9\';">';
-					listHtml += '</div>';
+					listHtml += '<div class="thumb" onclick="ShowLightbox(' + cardId + ');"><img src="' + imgSrc + '" alt="' + cardTitle + '"></div>';
 				}
 				
 				listHtml += '</div>';
-				listHtml += '<p style="margin-top: 15px; color: var(--glow-red);"><strong>Purchased for ' + pack.cost + ' <img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="margin-left: 0px; height: 16px; display: inline-block; vertical-align: sub; filter: invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg);"></strong></p>';
-				listHtml += '</div>';
-				
+				listHtml += '<p class="shop-summary">Purchased for <strong>' + pack.cost + '</strong>' + CreditIcon() + '</p>';
+
 				// Find the buttons container and replace with purchase info and BACK TO SHOP button
 				var buttonsDiv = document.getElementById('shop-buttons');
-				buttonsDiv.innerHTML = listHtml + '<button class="button" onclick="BackToShop();" style="width: 100%; margin-top: 20px;">BACK TO SHOP</button>';
+				buttonsDiv.innerHTML = listHtml + '<button class="button primary" onclick="BackToShop();">Back to shop</button>';
 				
 				// Update the credits display in the modal
 				document.getElementById('shop-credits').innerHTML = gauntletCredits;
@@ -2200,7 +2109,7 @@
 				window.PopulatePreconDropdownForIdentity = function(identityId) {
 					var dropdown = $('#preconselect');
 					dropdown.empty();
-					dropdown.append('<option value="-1">Load Precon Deck</option>');
+					dropdown.append('<option value="-1">Load precon deck</option>');
 					for (var i = 0; i < preconDecks.length; i++) {
 						var deck = preconDecks[i];
 						if (String(identityId) === String(deck.identity)) {
@@ -2215,7 +2124,7 @@
 				} else if (json && json.identity) {
 					window.PopulatePreconDropdownForIdentity(json.identity);
 				} else {
-					$('#preconselect').empty().append('<option value="-1">Load Precon Deck</option>');
+					$('#preconselect').empty().append('<option value="-1">Load precon deck</option>');
 				}
 
 				// DRBO6: Gauntlet Mode - Load or generate gauntlet state
@@ -2559,7 +2468,7 @@
 					else if (faction === 'neutral' || faction === 'neutral-runner') factionCounts['Neutral'] += gauntletCardCounts[cardId];
 				}
 			}
-			var collectionDetailsHtml = '<div class="collection-details"><div><span>&gt; Anarch:</span><span>' + factionCounts['Anarch'] + ' cards</span></div><div><span>&gt; Criminal:</span><span>' + factionCounts['Criminal'] + ' cards</span></div><div><span>&gt; Shaper:</span><span>' + factionCounts['Shaper'] + ' cards</span></div><div><span>&gt; Neutral:</span><span>' + factionCounts['Neutral'] + ' cards</span></div></div>';
+			var collectionDetailsHtml = '<div class="collection-details"><div><span>Anarch:</span><span>' + factionCounts['Anarch'] + ' cards</span></div><div><span>Criminal:</span><span>' + factionCounts['Criminal'] + ' cards</span></div><div><span>Shaper:</span><span>' + factionCounts['Shaper'] + ' cards</span></div><div><span>Neutral:</span><span>' + factionCounts['Neutral'] + ' cards</span></div></div>';
 			validityOutput += '<div class="collection-stat-wrapper collapsed"><div class="deck-stat collection-stat"><span class="stat-label">Collection:</span> '+collectionSize+' cards</div>' + collectionDetailsHtml + '</div>';
 			// Credits stat
 			validityOutput += '<div class="deck-stat"><span class="stat-label">Credits:</span> '+gauntletCredits+'</div>';
@@ -2785,29 +2694,25 @@
 				var imgSrc = cardSet[id] && cardSet[id].imageFile ? GetImagePath(cardSet[id].imageFile) : '';
 				var availableCount = gauntletCardCounts[id] || 0;
 				
-				var modalHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center; max-width: 400px;">';
-				modalHtml += '<div class="solo-logo" style="width: 100%;">';
-				modalHtml += '<h1 class="logo-text" style="text-align: center; color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark); font-size: 1.5em;">SELL CARD</h1>';
-				modalHtml += '</div>';
-				modalHtml += '<div style="text-align: center; margin: 10px 0;">';
-				modalHtml += '<img src="' + imgSrc + '" style="max-height: 200px; border-radius: 8px;" />';
-				modalHtml += '</div>';
-				modalHtml += '<div style="color: var(--crt-red); font-family: monospace; padding: 10px; text-align: center;">';
-				modalHtml += '<p style="font-size: 16px;"><strong>' + cardName + '</strong></p>';
+				var modalHtml = '<div class="solo-menu" style="max-width: 400px;">';
+				modalHtml += '<div class="solo-logo"><h1 class="logo-text">Sell card</h1></div>';
+				modalHtml += '<div class="dialog-body">';
+				modalHtml += '<img class="sell-modal-card" src="' + imgSrc + '" alt=""/>';
+				modalHtml += '<p class="sell-modal-name">' + cardName + '</p>';
 				modalHtml += '<p class="sell-modal-text">How many would you like to sell?</p>';
-				modalHtml += '</div>';
 				// Quantity stepper
 				modalHtml += '<div class="settings-stepper sell-modal-stepper">';
-				modalHtml += '<button type="button" class="stepper-btn" onclick="AdjustSellQuantity(-1);" id="sell-qty-minus">-</button>';
+				modalHtml += '<button type="button" class="stepper-btn" onclick="AdjustSellQuantity(-1);" id="sell-qty-minus" aria-label="Fewer">−</button>';
 				modalHtml += '<span class="stepper-value sell-modal-qty" id="sell-qty-value">1</span>';
-				modalHtml += '<button type="button" class="stepper-btn" onclick="AdjustSellQuantity(1);" id="sell-qty-plus"' + (availableCount <= 1 ? ' disabled' : '') + '>+</button>';
+				modalHtml += '<button type="button" class="stepper-btn" onclick="AdjustSellQuantity(1);" id="sell-qty-plus" aria-label="More"' + (availableCount <= 1 ? ' disabled' : '') + '>+</button>';
 				modalHtml += '</div>';
 				// Credit display
-				modalHtml += '<p class="sell-modal-credit">You will receive <span id="sell-credit-value" class="sell-modal-credit-value">1</span> <img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="credit" style="filter: invert(1) brightness(0.5) sepia(1) saturate(5) hue-rotate(80deg);"></p>';
+				modalHtml += '<p class="sell-modal-credit">You will receive <span id="sell-credit-value" class="sell-modal-credit-value">1</span>' + CreditIcon() + '</p>';
+				modalHtml += '</div>';
 				// Buttons
-				modalHtml += '<div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; width: 100%;">';
-				modalHtml += '<button class="button" onclick="CloseSellConfirmModal();">CANCEL</button>';
-				modalHtml += '<button class="button button-red" onclick="ConfirmSellCard();">SELL</button>';
+				modalHtml += '<div class="dialog-actions row">';
+				modalHtml += '<button class="button" onclick="CloseSellConfirmModal();">Cancel</button>';
+				modalHtml += '<button class="button button-red" onclick="ConfirmSellCard();">Sell</button>';
 				modalHtml += '</div>';
 				modalHtml += '</div>';
 
@@ -3034,7 +2939,7 @@
 			if (gauntletCredits < cheapestPackCost) {
 				// Show red alert message - can't afford any packs
 				var alertHtml = '<div id="pool-verification-alert" class="pool-verification-alert">';
-				alertHtml += 'ALERT! - You currently do not have enough cards to build a legal deck with this runner. You may not be able to continue the Gauntlet. Sorry. Please let yourself out.';
+				alertHtml += '<strong>Alert:</strong> You currently do not have enough cards to build a legal deck with this runner. You may not be able to continue the Gauntlet. Sorry. Please let yourself out.';
 				alertHtml += '</div>';
 				
 				// Insert the alert between the runner image and the card stats (#output)
@@ -3042,7 +2947,7 @@
 			} else {
 				// Show orange warning message - still have credits to buy packs
 				var warningHtml = '<div id="pool-verification-alert" class="pool-verification-warning">';
-				warningHtml += 'WARNING! You currently do not have enough cards to build a legal deck with this runner. Use your remaining credits wisely.';
+				warningHtml += '<strong>Warning:</strong> You currently do not have enough cards to build a legal deck with this runner. Use your remaining credits wisely.';
 				warningHtml += '</div>';
 				
 				// Insert the warning between the runner image and the card stats (#output)
@@ -3176,19 +3081,19 @@
 		function CycleSort() {
 			if (currentSort === 'name') {
 				currentSort = 'quantity';
-				$('#sortbydeck').html('SORT BY:<br>QUANTITY');
+				$('#sortbydeck').html('<small>Sort</small>Quantity');
 			} else if (currentSort === 'quantity') {
 				currentSort = 'influence';
-				$('#sortbydeck').html('SORT BY:<br>INFLUENCE');
+				$('#sortbydeck').html('<small>Sort</small>Influence');
 			} else if (currentSort === 'influence') {
 				currentSort = 'faction';
-				$('#sortbydeck').html('SORT BY:<br>FACTION');
+				$('#sortbydeck').html('<small>Sort</small>Faction');
 			} else if (currentSort === 'faction') {
 				currentSort = 'type';
-				$('#sortbydeck').html('SORT BY:<br>TYPE');
+				$('#sortbydeck').html('<small>Sort</small>Type');
 			} else {
 				currentSort = 'name';
-				$('#sortbydeck').html('SORT BY:<br>NAME');
+				$('#sortbydeck').html('<small>Sort</small>Name');
 			}
 			SortCardsBySort();
 		}
@@ -3196,19 +3101,19 @@
 		function CycleSortReverse() {
 			if (currentSort === 'name') {
 				currentSort = 'type';
-				$('#sortbydeck').html('SORT BY:<br>TYPE');
+				$('#sortbydeck').html('<small>Sort</small>Type');
 			} else if (currentSort === 'type') {
 				currentSort = 'faction';
-				$('#sortbydeck').html('SORT BY:<br>FACTION');
+				$('#sortbydeck').html('<small>Sort</small>Faction');
 			} else if (currentSort === 'faction') {
 				currentSort = 'influence';
-				$('#sortbydeck').html('SORT BY:<br>INFLUENCE');
+				$('#sortbydeck').html('<small>Sort</small>Influence');
 			} else if (currentSort === 'influence') {
 				currentSort = 'quantity';
-				$('#sortbydeck').html('SORT BY:<br>QUANTITY');
+				$('#sortbydeck').html('<small>Sort</small>Quantity');
 			} else {
 				currentSort = 'name';
-				$('#sortbydeck').html('SORT BY:<br>NAME');
+				$('#sortbydeck').html('<small>Sort</small>Name');
 			}
 			SortCardsBySort();
 		}
@@ -3303,19 +3208,19 @@
 		function CycleFactionFilter() {
 			if (currentFactionFilter === 'all') {
 				currentFactionFilter = 'anarch';
-				$('#filterfaction').html('FACTION:<br>ANARCH');
+				$('#filterfaction').html('<small>Faction</small>Anarch');
 			} else if (currentFactionFilter === 'anarch') {
 				currentFactionFilter = 'criminal';
-				$('#filterfaction').html('FACTION:<br>CRIMINAL');
+				$('#filterfaction').html('<small>Faction</small>Criminal');
 			} else if (currentFactionFilter === 'criminal') {
 				currentFactionFilter = 'shaper';
-				$('#filterfaction').html('FACTION:<br>SHAPER');
+				$('#filterfaction').html('<small>Faction</small>Shaper');
 			} else if (currentFactionFilter === 'shaper') {
 				currentFactionFilter = 'neutral';
-				$('#filterfaction').html('FACTION:<br>NEUTRAL');
+				$('#filterfaction').html('<small>Faction</small>Neutral');
 			} else {
 				currentFactionFilter = 'all';
-				$('#filterfaction').html('FACTION:<br>ALL');
+				$('#filterfaction').html('<small>Faction</small>All');
 			}
 			SortCardsBySort();
 			ApplyFilters();
@@ -3324,19 +3229,19 @@
 		function CycleFactionFilterReverse() {
 			if (currentFactionFilter === 'all') {
 				currentFactionFilter = 'neutral';
-				$('#filterfaction').html('FACTION:<br>NEUTRAL');
+				$('#filterfaction').html('<small>Faction</small>Neutral');
 			} else if (currentFactionFilter === 'neutral') {
 				currentFactionFilter = 'shaper';
-				$('#filterfaction').html('FACTION:<br>SHAPER');
+				$('#filterfaction').html('<small>Faction</small>Shaper');
 			} else if (currentFactionFilter === 'shaper') {
 				currentFactionFilter = 'criminal';
-				$('#filterfaction').html('FACTION:<br>CRIMINAL');
+				$('#filterfaction').html('<small>Faction</small>Criminal');
 			} else if (currentFactionFilter === 'criminal') {
 				currentFactionFilter = 'anarch';
-				$('#filterfaction').html('FACTION:<br>ANARCH');
+				$('#filterfaction').html('<small>Faction</small>Anarch');
 			} else {
 				currentFactionFilter = 'all';
-				$('#filterfaction').html('FACTION:<br>ALL');
+				$('#filterfaction').html('<small>Faction</small>All');
 			}
 			SortCardsBySort();
 			ApplyFilters();
@@ -3345,22 +3250,22 @@
 		function CycleTypeFilter() {
 			if (currentTypeFilter === 'all') {
 				currentTypeFilter = 'event';
-				$('#filtertype').html('TYPE:<br>EVENT');
+				$('#filtertype').html('<small>Type</small>Event');
 			} else if (currentTypeFilter === 'event') {
 				currentTypeFilter = 'icebreaker';
-				$('#filtertype').html('TYPE:<br>ICEBREAKER');
+				$('#filtertype').html('<small>Type</small>Icebreaker');
 			} else if (currentTypeFilter === 'icebreaker') {
 				currentTypeFilter = 'program';
-				$('#filtertype').html('TYPE:<br>PROGRAM');
+				$('#filtertype').html('<small>Type</small>Program');
 			} else if (currentTypeFilter === 'program') {
 				currentTypeFilter = 'hardware';
-				$('#filtertype').html('TYPE:<br>HARDWARE');
+				$('#filtertype').html('<small>Type</small>Hardware');
 			} else if (currentTypeFilter === 'hardware') {
 				currentTypeFilter = 'resource';
-				$('#filtertype').html('TYPE:<br>RESOURCE');
+				$('#filtertype').html('<small>Type</small>Resource');
 			} else {
 				currentTypeFilter = 'all';
-				$('#filtertype').html('TYPE:<br>ALL');
+				$('#filtertype').html('<small>Type</small>All');
 			}
 			SortCardsBySort();
 			ApplyFilters();
@@ -3369,22 +3274,22 @@
 		function CycleTypeFilterReverse() {
 			if (currentTypeFilter === 'all') {
 				currentTypeFilter = 'resource';
-				$('#filtertype').html('TYPE:<br>RESOURCE');
+				$('#filtertype').html('<small>Type</small>Resource');
 			} else if (currentTypeFilter === 'resource') {
 				currentTypeFilter = 'hardware';
-				$('#filtertype').html('TYPE:<br>HARDWARE');
+				$('#filtertype').html('<small>Type</small>Hardware');
 			} else if (currentTypeFilter === 'hardware') {
 				currentTypeFilter = 'program';
-				$('#filtertype').html('TYPE:<br>PROGRAM');
+				$('#filtertype').html('<small>Type</small>Program');
 			} else if (currentTypeFilter === 'program') {
 				currentTypeFilter = 'icebreaker';
-				$('#filtertype').html('TYPE:<br>ICEBREAKER');
+				$('#filtertype').html('<small>Type</small>Icebreaker');
 			} else if (currentTypeFilter === 'icebreaker') {
 				currentTypeFilter = 'event';
-				$('#filtertype').html('TYPE:<br>EVENT');
+				$('#filtertype').html('<small>Type</small>Event');
 			} else {
 				currentTypeFilter = 'all';
-				$('#filtertype').html('TYPE:<br>ALL');
+				$('#filtertype').html('<small>Type</small>All');
 			}
 			SortCardsBySort();
 			ApplyFilters();
@@ -3454,7 +3359,7 @@
 							+'<div class="card-title">'+(cardSet[cardId].title || 'Unknown')+' </div>'
 							+'<div class="card-controls">'
 								+'<button type="button" class="remove-btn" data-id="'+cardId+'">-</button>'
-								+'<button type="button" class="sell-btn" data-id="'+cardId+'"><img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="sell" style="height: 14px; filter: brightness(0) saturate(100%) invert(76%) sepia(85%) saturate(2206%) hue-rotate(81deg) brightness(118%) contrast(119%);" loading="eager" /></button>'
+								+'<button type="button" class="sell-btn" data-id="'+cardId+'" aria-label="Sell"><img src="images/nsg/NSG_CREDIT.svg" class="card-icon" alt="" loading="eager" /></button>'
 								+'<button type="button" class="add-btn" data-id="'+cardId+'">+</button>'
 							+'</div>'
 						+'</div>';
@@ -3712,7 +3617,7 @@
 			
 			// Build filter options dynamically from setRegistry
 			var filterOptions = ['all'];
-			var filterLabels = { 'all': 'ALL CARDS' };
+			var filterLabels = { 'all': 'All cards' };
 			if (typeof setRegistry !== 'undefined' && setRegistry.availableSets) {
 				for (var setKey in setRegistry.availableSets) {
 					var set = setRegistry.availableSets[setKey];
@@ -3724,7 +3629,7 @@
 			} else {
 				// Fallback if setRegistry not available
 				filterOptions = ['all', 'sg', 'su21'];
-				filterLabels = { 'all': 'ALL CARDS', 'sg': 'SG', 'su21': 'SU21' };
+				filterLabels = { 'all': 'All cards', 'sg': 'SG', 'su21': 'SU21' };
 			}
 			var filterIndex = 0;
 
@@ -3742,7 +3647,7 @@
 				filterIndex = (filterIndex + 1) % filterOptions.length;
 				currentFilter = filterOptions[filterIndex];
 				var label = filterLabels[currentFilter] || currentFilter.toUpperCase();
-				$('#filterdeck').html('FILTER:<br>' + label);
+				$('#filterdeck').html('<small>Filter</small>' + label);
 				ApplyFilter();
 			}
 
@@ -3789,13 +3694,13 @@
 				if (!showingOnlySelected) {
 					// Set the flag first, then apply filters which will respect it
 					showingOnlySelected = true;
-					$('#togglecards').text('SHOW UNSELECTED');
+					$('#togglecards').text('Show unselected');
 					// Reapply all filters - ApplyFilters will respect showingOnlySelected
 					ApplyFilters();
 				} else {
 					// Show all cards allowed by current filters
 					showingOnlySelected = false;
-					$('#togglecards').text('HIDE UNSELECTED');
+					$('#togglecards').text('Hide unselected');
 					// Reapply all filters
 					ApplyFilters();
 				}
@@ -4831,7 +4736,7 @@
 					else if (faction === 'neutral' || faction === 'neutral-runner') factionCounts['Neutral'] += gauntletCardCounts[cardId];
 				}
 			  }
-			  var collectionDetailsHtml = '<div class="collection-details"><div><span>&gt; Anarch:</span><span>' + factionCounts['Anarch'] + ' cards</span></div><div><span>&gt; Criminal:</span><span>' + factionCounts['Criminal'] + ' cards</span></div><div><span>&gt; Shaper:</span><span>' + factionCounts['Shaper'] + ' cards</span></div><div><span>&gt; Neutral:</span><span>' + factionCounts['Neutral'] + ' cards</span></div></div>';
+			  var collectionDetailsHtml = '<div class="collection-details"><div><span>Anarch:</span><span>' + factionCounts['Anarch'] + ' cards</span></div><div><span>Criminal:</span><span>' + factionCounts['Criminal'] + ' cards</span></div><div><span>Shaper:</span><span>' + factionCounts['Shaper'] + ' cards</span></div><div><span>Neutral:</span><span>' + factionCounts['Neutral'] + ' cards</span></div></div>';
 			  validityOutput += '<div class="collection-stat-wrapper collapsed"><div class="deck-stat collection-stat"><span class="stat-label">Collection:</span> '+collectionSize+' cards</div>' + collectionDetailsHtml + '</div>';
 			  // Credits stat
 			  validityOutput += '<div class="deck-stat"><span class="stat-label">Credits:</span> '+gauntletCredits+'</div>';
@@ -4841,7 +4746,7 @@
 			  } else {
 				$("#output").html(validityOutput + $("#output").html());
 			  }
-		  $("#launch").html("PLAY<br>DECK");
+		  $("#launch").html("Play deck");
 		  UpdateLaunchStrings();
 		  UpdatePlayDeckButtonState(); // Properly check identity and deck validity
 		  // Hide opponent display - opponents are now accessed via Play Deck and Hack Opponents buttons
@@ -4873,10 +4778,6 @@
 
 
 	<body class="deck-builder-page" onload="Init();">
-		<script>
-		// Apply CRT setting immediately to avoid flash of effects
-		(function(){try{var s=localStorage.getItem('chiriboga-settings');if(s){var p=JSON.parse(s);if(p.crtEffects===false)document.body.classList.add('no-crt');}}catch(e){}})();
-		</script>
 		<!-- Loading Overlay - hidden when page is ready -->
 		<div id="loading-overlay">
 			<div class="loading-text">Loading<span class="loading-dots"></span></div>
@@ -4897,48 +4798,45 @@
 		</script>
 		<div id="contentcontainer">
 			<div id="dataentry">
-				<div class="leftrow toprow">
-					<select id="identityselect"></select>
-					<img id="identity" src="images/glow_outline.png" onclick="if(json.identity) ShowLightbox(json.identity);" style="cursor:pointer;">
+				<header class="page-bar">
+					<button id="exittomenu" onclick="window.location.href='index.php';" class="button" type="button">Menu</button>
+					<h1 class="page-title">Gauntlet</h1>
+				</header>
+				<div class="leftrow toprow identity-panel">
+					<select id="identityselect" aria-label="Identity"></select>
+					<img id="identity" src="images/glow_outline.png" onclick="if(json.identity) ShowLightbox(json.identity);" alt="Identity">
 					<div class="rightpart">
 						<div id="output">
 						</div>
 						<div id="opponentid"></div>
 					</div>
 				</div>
-			<div class="leftrow buttons">
-				<button id="launch" class="button button-red" onclick="if(!$(this).prop('disabled')) ShowSelectOpponentModal();">PLAY<br>DECK</button>
-				<button id="exittomenu" onclick="window.location.href='index.php';" class="button">BACK TO<br>MENU</button>
-				<button id="buycards" onclick="ShowBuyCardsModal();" class="button">BUY/SELL<br>CARDS</button>
-				<button id="hackopponents" onclick="ShowHackOpponentsModal();" class="button">HACK<br>OPPONENTS</button>
-				<button id="addnoninfluence" onclick="AddNonInfluence();" class="button">ADD IN-<br>FACTION</button>
-				<button id="cleardeck" onclick="ClearDeck();" class="button">CLEAR<br>DECK</button>
-				<button id="sortbydeck" onclick="CycleSort();" class="button">SORT BY:<br>NAME</button>
-				<button id="togglecards" onclick="ToggleOtherCards();" class="button">HIDE UNSELECTED</button>
-				<button id="filterfaction" onclick="CycleFactionFilter();" class="button">FACTION:<br>ALL</button>
-				<button id="filtertype" onclick="CycleTypeFilter();" class="button">TYPE:<br>ALL</button>
-				<!-- DRBO6: Gauntlet Mode - hide Set as Opponent, Random Deck, Import NRDB, Load Precon -->
-				<button id="opponent" class="button" onclick="window.location.href=$(this).prop('href');" style="display:none;">SET AS OPPONENT</button>
-				<button id="randomdeck" onclick="GenerateRandomDeck();" class="button" style="display:none;">RANDOM<br>DECK</button>
-			</div>
-				<div class="leftrow toprow">
-					<div class="deck-heading">CURRENT DECK:</div>
-					<div id="deck" style="width:100%; border:1px solid #ccc; padding:10px; min-height:100px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; background-color:#f9f9f9; font-family:monospace;"></div>
-					<div style="margin-top:8px;">
-						<button id="importdeckfromNRDB" class="button" type="button" style="display:none;">Import Deck from NRDB</button>
-					</div>
-					<div style="margin-top:8px; display:none;">
-						<select id="preconselect" class="button" style="width:85%; display:block; margin:0 auto;">
-							<option value="-1">Load Precon Deck</option>
-						</select>
-					</div>
-	                <!-- DRBO6: Gauntlet Mode - hide export button -->
-                <div style="margin-top:8px; display:none;">
-                    <button id="exportjs" class="button" type="button" style="width:85%; display:block; margin:0 auto;">Export JS Deck</button>
-                </div>
-					<br/>
+				<div class="leftrow buttons">
+					<button id="launch" class="button button-red" onclick="if(!$(this).prop('disabled')) ShowSelectOpponentModal();">Play deck</button>
+					<button id="buycards" onclick="ShowBuyCardsModal();" class="button">Buy / sell cards</button>
+					<button id="hackopponents" onclick="ShowHackOpponentsModal();" class="button">Hack opponents</button>
+					<button id="addnoninfluence" onclick="AddNonInfluence();" class="button">Add in‑faction</button>
+					<button id="cleardeck" onclick="ClearDeck();" class="button">Clear deck</button>
+					<button id="togglecards" onclick="ToggleOtherCards();" class="button">Hide unselected</button>
+					<button id="sortbydeck" onclick="CycleSort();" class="button"><small>Sort</small>Name</button>
+					<button id="filterfaction" onclick="CycleFactionFilter();" class="button"><small>Faction</small>All</button>
+					<button id="filtertype" onclick="CycleTypeFilter();" class="button"><small>Type</small>All</button>
+					<!-- DRBO6: Gauntlet Mode - hide Set as Opponent, Random Deck, Import NRDB, Load Precon -->
+					<button id="opponent" class="button" onclick="window.location.href=$(this).prop('href');" style="display:none;">Set as opponent</button>
+					<button id="randomdeck" onclick="GenerateRandomDeck();" class="button" style="display:none;">Random deck</button>
 				</div>
-				<br/>
+				<div class="leftrow toprow deck-panel">
+					<div class="deck-heading">Current deck</div>
+					<div id="deck"></div>
+					<button id="importdeckfromNRDB" class="button" type="button" style="display:none;">Import from NRDB</button>
+					<!-- DRBO6: Gauntlet Mode - hide precon loader and export button -->
+					<div style="display:none;">
+						<select id="preconselect">
+							<option value="-1">Load precon deck</option>
+						</select>
+						<button id="exportjs" class="button" type="button">Export JS deck</button>
+					</div>
+				</div>
 			</div>
 			<div id="cardcontainer">
 			</div>
@@ -4946,7 +4844,7 @@
 		<!-- Lightbox container for enlarged card view -->
 		<div id="lightbox">
 			<div id="lightbox-content">
-				<span id="lightbox-close">[CLOSE]</span>
+				<span id="lightbox-close" aria-label="Close">Close</span>
 				<div id="lightbox-body">
 					<img id="lightbox-img" src="" alt="Card"/>
 					<div id="lightbox-text"></div>

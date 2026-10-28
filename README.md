@@ -27,24 +27,36 @@ hand to play it.
 
 ## What's changed from upstream
 
-`engine/` is a copy of upstream (commit in `engine/UPSTREAM_COMMIT`) with one change: a
-portrait board layout. `engine/portrait.js` lays the corp's servers out in rows and the
-runner's rig above their identity, stack and heap, so a tall phone screen is filled instead
-of the landscape board being shrunk to its width. Small hooks in `init.js` (`Render`),
-`utility.js` (`MouseIsOverServer`) and `cardrenderer.js` (server highlight) make server
-targeting work with rows; `cardrenderer.js` also opens the card reader on a tap; landscape behaves exactly as upstream.
+`engine/` is a copy of upstream (commit in `engine/UPSTREAM_COMMIT`) with two sets of changes:
+
+- **A portrait board layout.** `engine/portrait.js` lays the corp's servers out in rows and the
+  runner's rig above their identity, stack and heap, so a tall phone screen is filled instead
+  of the landscape board being shrunk to its width. Small hooks in `init.js` (`Render`),
+  `utility.js` (`MouseIsOverServer`) and `cardrenderer.js` (server highlight) make server
+  targeting work with rows; `cardrenderer.js` also opens the card reader on a tap; landscape
+  behaves exactly as upstream.
+- **A new look.** Upstream's green CRT terminal theme is replaced by a dark graphite design set
+  in Inter (bundled in `engine/fonts/`, SIL OFL). `style.css` holds the design tokens, shared
+  components and the in-game HUD; `menu.css` the main menu; `decks.css` the deck builder and
+  gauntlet. Old CSS variable names (`--crt-green`…) are kept as aliases so inline styles keep
+  working. On the board, `BoardPalette` in `cardrenderer.js` sets the highlight colours and the
+  per-type counter colours, and counters pop when they change. The main menu's markup in
+  `index.php` was rebuilt (home screen plus full-screen panels), as were the in-game menu in
+  `engine.php` and the deck info and gauntlet summary dialogs in `init.js` and `utility.js`.
+  The CRT effects setting is gone; sound and vibration settings replace it.
 
 The build (`scripts/build.mjs`) turns it into a static site in `dist/`:
 
 - renders the PHP pages to plain HTML once at build time (PHP was only used for cache-busting and includes)
 - removes Google Analytics and the IP address display
-- adds `mobile/`: a PWA manifest and icons, a service worker for offline play and text-card
-  placeholders, high-DPI board rendering, a phone-sized HUD in portrait, haptic taps on
-  buttons, keeping the screen awake during a game, suppression of long-press menus, and the
-  card-art importer
+- adds `mobile/`: a PWA manifest and icons, a service worker for offline play and placeholder
+  art (text cards, card backs, counter chips), high-DPI board rendering, keeping the screen
+  awake during a game, suppression of long-press menus, the card reader, the card-art
+  importer, and `feedback.js`: short synthesised sounds and vibration for taps and game
+  moments (runs, damage, agendas, winning and losing), each switchable in Settings
 
-To update the engine, replace `engine/` with a newer upstream checkout, re-apply the portrait
-hooks (`git log -p -- engine/` shows them) and rebuild.
+To update the engine, replace `engine/` with a newer upstream checkout, re-apply these changes
+(`git log -p -- engine/` shows them) and rebuild. Engine files use CRLF line endings; keep them.
 
 ## Build and deploy
 

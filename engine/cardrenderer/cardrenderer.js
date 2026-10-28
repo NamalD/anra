@@ -1614,9 +1614,9 @@ var CardRenderer = {
       });
       //Inter is a web font: redraw the counters once it has loaded
       if (document.fonts && document.fonts.load) {
-        var counterStyle = this.counterStyle;
-        document.fonts.load('800 46px Inter').then(function () {
-          counterStyle.styleID++;
+        var renderer = this;
+        Promise.all([document.fonts.load('800 46px Inter'), document.fonts.load('600 20px Inter')]).then(function () {
+          [renderer.counterStyle, renderer.tutorialStyle].forEach(function (style) { style.styleID++; });
         });
       }
       this.typeStyle = new PIXI.TextStyle({
@@ -1634,9 +1634,10 @@ var CardRenderer = {
         strokeThickness: 3,
       });
       this.tutorialStyle = new PIXI.TextStyle({
-		fontFamily: "PlayBoldNisei",
+        fontFamily: "Inter, PlayBoldNisei, sans-serif",
         fill: "white",
-        fontWeight: "bold",
+        fontWeight: "600",
+        lineHeight: 34,
         miterLimit: 1,
         strokeThickness: 4,
         wordWrap: true,

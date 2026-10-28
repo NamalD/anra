@@ -1453,6 +1453,27 @@ function ShowGauntletLostModal(gauntletState) {
 }
 
 /**
+ * Show a short banner when a turn starts ("Your turn" or the opponent's).
+ *
+ * @method AnnounceTurn
+ * @param {Player} player whose turn is starting
+ */
+function AnnounceTurn(player) {
+  var mine = player == viewingPlayer;
+  var banner = document.getElementById("turn-banner");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "turn-banner";
+    document.body.appendChild(banner);
+  }
+  banner.textContent = mine ? "Your turn" : (player == corp ? "Corp's turn" : "Runner's turn");
+  banner.className = mine ? "mine" : "";
+  void banner.offsetWidth; //restart the animation
+  banner.classList.add("show");
+  if (mine) PlayFeedback("confirm");
+}
+
+/**
  * Sound and vibration for a game moment (mobile/feedback.js), if available.
  *
  * @method PlayFeedback

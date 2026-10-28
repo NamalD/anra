@@ -1956,6 +1956,7 @@ function ChangePhase(src, skipInit = false) {
 
   if (currentPhase.identifier == "Corp 1.1") playerTurn = corp;
   else if (currentPhase.identifier == "Runner 1.1") playerTurn = runner;
+  if (!rewinding && playerTurn != oldTurn && typeof playerTurn !== "undefined") AnnounceTurn(playerTurn);
   
   if (!rewinding) {
 	  if (playerTurn != oldTurn || currentPhase.identifier == "Runner Mulligan") {
