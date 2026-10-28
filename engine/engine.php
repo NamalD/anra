@@ -549,20 +549,14 @@
 
 	<body id="body" onload="Init();">
 		<script>
-		// Apply CRT setting immediately to avoid flash of effects
-		(function(){try{var s=localStorage.getItem('chiriboga-settings');if(s){var p=JSON.parse(s);if(p.crtEffects===false)document.body.classList.add('no-crt');}}catch(e){}})();
-		function toggleCrtFromMenu(enabled){
-			if(enabled){document.body.classList.remove('no-crt');}else{document.body.classList.add('no-crt');}
-			try{var s=localStorage.getItem('chiriboga-settings');var p=s?JSON.parse(s):{};p.crtEffects=enabled;localStorage.setItem('chiriboga-settings',JSON.stringify(p));}catch(e){}
-		}
 		document.addEventListener('DOMContentLoaded',function(){
-			try{var s=localStorage.getItem('chiriboga-settings');if(s){var p=JSON.parse(s);var cb=document.getElementById('crt-toggle');if(cb)cb.checked=(p.crtEffects!==false);}}catch(e){}
+			var cb=document.getElementById('sound-toggle');
+			if(cb&&window.Feedback)cb.checked=Feedback.sound;
 		});
 		</script>
 		<div id="contentcontainer" class="content">
 			<div class="netrunner-bg-watermark"></div> <!-- default watermark text, will be replaced -->
 			<!-- ...existing code... -->
-			<div id="crt-overlay"></div>
 			<div id="output"></div>
 			<form id="cmdform">
 				<input type="submit" value="Submit">
@@ -571,15 +565,13 @@
 			</form>
 		</div>
 	<div id="menubar">
-		<button class="menu-trigger" onclick="$('#menu').css('display','flex'); $('.fullscreen-button').show();">MENU</button>
-		<button class="deck-info-button" onclick="ShowDeckInfo(); $('#help-modal').css('display','flex');"></button>
-		<button class="rulebook-button" onclick="window.open('https://nullsignal.games/players/learn-to-play/', '_blank');"></button>
-		<button class="debug-menu-button" style="display:none; margin-left:6px;" onclick="debugPopulateCardDropdown(); $('#debug-modal').css('display','flex');">
-			<img src="images/debug.svg" alt="Debug" class="icon" style="width:32px;height:32px;vertical-align:middle;" />
-		</button>
+		<button class="menu-trigger" aria-label="Menu" title="Menu" onclick="$('#menu').css('display','flex'); $('.fullscreen-button').show();">MENU</button>
+		<button class="deck-info-button" aria-label="Deck info" title="Deck info" onclick="ShowDeckInfo(); $('#help-modal').css('display','flex');"></button>
+		<button class="rulebook-button" aria-label="Rules" title="Rules" onclick="window.open('https://nullsignal.games/players/learn-to-play/', '_blank');"></button>
+		<button class="debug-menu-button" aria-label="Debug menu" title="Debug menu" style="display:none;" onclick="debugPopulateCardDropdown(); $('#debug-modal').css('display','flex');"></button>
 	</div>
 	<div id="header"></div>
-	<button class="fullscreen-button" onclick="document.getElementById('body').requestFullscreen({ navigationUI: 'hide' });"></button>
+	<button class="fullscreen-button" aria-label="Full screen" onclick="document.getElementById('body').requestFullscreen({ navigationUI: 'hide' });"></button>
 		<div id="fps"></div>
 		<div id="footer"></div>
 		<div id="modal" class="modal">
@@ -589,56 +581,49 @@
 			<div id="history"></div>
 		</div>
 		<div id="loading" class="modal" style="display:flex;">
-			<div class="modal-content-inactive"><h1 id="loading-text">DECKBUILDING...</h1></div>
+			<div class="modal-content-inactive"><h1 id="loading-text">Building decks…</h1></div>
 		</div>
 		<div id="menu" class="modal">
 			<div id="menucontent" class="solo-menu">
 				<span id="menu-close" class="menu-close" onclick="$('#menu').css('display','none');">✕</span>
 				<div class="solo-logo">
-					<h1 class="logo-text">NETRUNNER</h1>
-					<div class="subtitle-line"><span class="subtitle-text">$0LØ MOÐ3</span></div>
+					<h1 class="logo-text">Paused</h1>
+					<div class="subtitle-line"><span class="subtitle-text">Netrunner solo mode</span></div>
 				</div>
 				<div class="menu-options">
-					<button id="exittomenu" onclick="window.location.href='index.php';" class="button">EXIT TO MAIN MENU</button>
-					<button onclick="DownloadCapturedLog();" class="button">DOWNLOAD DEBUG LOG</button>
 					<select id="rewind-select" disabled class="button">
-						<option value="">UNDO</option>
+						<option value="">Undo</option>
 					</select>
+					<button id="exittomenu" onclick="window.location.href='index.php';" class="button">Exit to main menu</button>
+					<button onclick="DownloadCapturedLog();" class="button">Download debug log</button>
 				</div>
-				   <div class="toggle-options">
-					   <div class="toggle-grid">
-						   <label class="toggle-item"><input type="checkbox" id="narration"> Narrate AI</label>
-					   <label class="toggle-item"><input type="checkbox" id="largerhistory"> Larger history</label>
-					   <label class="toggle-item"><input type="checkbox" id="debugmenu-toggle"> Debug Menu</label>
-				   <label class="toggle-item"><input type="checkbox" id="crt-toggle" onchange="toggleCrtFromMenu(this.checked)"> CRT Effects</label>
-					   <div class="toggle-separator"></div>
-				   <div class="toggle-item" style="display:flex;align-items:center;gap:12px;justify-content:center;grid-column:1/-1;">
-						   <span style="min-width:50px;color:var(--crt-green-muted);">SPEED:</span>
-						   <label style="display:flex;align-items:center;gap:4px;margin:0;">
-							   <input type="checkbox" id="speed-1" onchange="debugSetSpeedPreset(1000)">
-							   <span style="width:12px;text-align:center;color:var(--crt-green-muted);">1</span>
-						   </label>
-						   <label style="display:flex;align-items:center;gap:4px;margin:0;">
-							   <input type="checkbox" id="speed-2" checked onchange="debugSetSpeedPreset(350)">
-							   <span style="width:12px;text-align:center;color:var(--crt-green-muted);">2</span>
-						   </label>
-						   <label style="display:flex;align-items:center;gap:4px;margin:0;">
-							   <input type="checkbox" id="speed-3" onchange="debugSetSpeedPreset(100)">
-							   <span style="width:12px;text-align:center;color:var(--crt-green-muted);">3</span>
-						   </label>
-					   </div>
-				   </div>
-				   </div>
+				<div class="toggle-options">
+					<div class="toggle-grid">
+						<label class="toggle-item"><input type="checkbox" id="narration"> Narrate AI</label>
+						<label class="toggle-item"><input type="checkbox" id="largerhistory"> Larger history</label>
+						<label class="toggle-item"><input type="checkbox" id="debugmenu-toggle"> Debug menu</label>
+						<label class="toggle-item"><input type="checkbox" id="sound-toggle" onchange="Feedback.setSound(this.checked)"> Sound</label>
+						<div class="toggle-separator"></div>
+						<div class="toggle-item speed-options">
+							<span class="speed-label">AI speed</span>
+							<div class="segmented">
+								<label><input type="checkbox" id="speed-1" onchange="debugSetSpeedPreset(1000)"><span>Slow</span></label>
+								<label><input type="checkbox" id="speed-2" checked onchange="debugSetSpeedPreset(350)"><span>Normal</span></label>
+								<label><input type="checkbox" id="speed-3" onchange="debugSetSpeedPreset(100)"><span>Fast</span></label>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 		<div id="help-modal" class="modal">
 			<div class="solo-menu">
 				<span class="menu-close" onclick="$('#help-modal').css('display','none');">✕</span>
 				<div class="solo-logo">
-					<h1 class="logo-text">DECK INFO</h1>
+					<h1 class="logo-text">Deck info</h1>
 				</div>
-				<div id="help-content" style="color:#33ff33; font-family:monospace; font-size:14px; text-align:left; max-height:400px; overflow-y:auto; padding:20px;">
-					<p>Loading deck information...</p>
+				<div id="help-content">
+					<p>Loading deck information…</p>
 				</div>
 			</div>
 		</div>
@@ -646,7 +631,7 @@
 			<div class="solo-menu">
 				<span class="menu-close" onclick="$('#debug-modal').css('display','none');">✕</span>
 				<div class="solo-logo">
-					<h1 class="logo-text">DEBUG MENU</h1>
+					<h1 class="logo-text">Debug menu</h1>
 				</div>
 				<div class="menu-options">
 					<button class="button" onclick="debugAddClick()">Add a Click</button>
@@ -670,14 +655,14 @@
 		<div id="hostile-takeover-modal" class="modal">
 			<div class="solo-menu">
 				<div class="solo-logo">
-					<h1 class="logo-text">HOSTILE TAKEOVER</h1>
+					<h1 class="logo-text">Hostile takeover</h1>
 				</div>
 				<div id="hostile-takeover-content">
 					<p>You weakened your last opponent enough for this Corp to buy up its assets and become stronger. It starts with the following perks:</p>
 					<div id="hostile-takeover-perks"></div>
 				</div>
 				<div class="hostile-takeover-buttons">
-					<button class="button" onclick="dismissHostileTakeoverModal();">CONTINUE</button>
+					<button class="button primary" onclick="dismissHostileTakeoverModal();">Continue</button>
 				</div>
 			</div>
 		</div>

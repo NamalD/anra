@@ -39,11 +39,12 @@ for (const f of walk(mobileDir).sort()) mobileHash.update(f).update(fs.readFileS
 const v = "?v=" + mobileHash.digest("hex").slice(0, 8);
 
 const HEAD_INJECT = [
-  '<meta name="theme-color" content="#0b1114">',
+  '<meta name="theme-color" content="#0b0c0f">',
   '<meta name="mobile-web-app-capable" content="yes">',
   '<link rel="manifest" href="manifest.webmanifest">',
   '<link rel="icon" href="mobile/icons/icon-192.png">',
   `<link rel="stylesheet" href="mobile/mobile.css${v}">`,
+  `<script src="mobile/feedback.js${v}"></script>`,
   `<script src="mobile/mobile.js${v}"></script>`,
   `<script src="mobile/reader.js${v}"></script>`,
 ].join("\n");

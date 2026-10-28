@@ -73,7 +73,9 @@
 
   function close(fromPopState) {
     if (!overlay) return;
-    overlay.remove();
+    var closing = overlay;
+    closing.classList.add("closing");
+    setTimeout(function () { closing.remove(); }, 220);
     overlay = null;
     if (!fromPopState && history.state && history.state.anraReader) history.back();
   }

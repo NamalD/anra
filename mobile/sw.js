@@ -263,14 +263,23 @@ function blankCardSvg(label) {
 }
 
 function backSvg(isCorp) {
-  const c = isCorp ? "#2b4a7a" : "#7a2b2b";
+  const [top, bottom, accent] = isCorp ? ["#1f3560", "#0e1830", "#7fb0ff"] : ["#5a2420", "#25100e", "#ff9a7e"];
   const label = isCorp ? "CORP" : "RUNNER";
-  let grid = "";
-  for (let y = 30; y < H - 20; y += 24) grid += `<line x1="16" y1="${y}" x2="${W - 16}" y2="${y}" stroke="#ffffff14"/>`;
+  const cx = W / 2;
+  const cy = H / 2;
+  let lines = "";
+  for (let x = -H; x < W; x += 18) lines += `<line x1="${x}" y1="${H}" x2="${x + H}" y2="0" stroke="#fff" stroke-opacity=".035" stroke-width="2"/>`;
   return svgDoc(
-    `<rect x="12" y="12" width="${W - 24}" height="${H - 24}" rx="9" fill="${c}"/>${grid}` +
-      `<text x="${W / 2}" y="${H / 2 + 10}" font-family="sans-serif" font-size="34" font-weight="bold" fill="#ffffffcc" text-anchor="middle">${label}</text>`,
-    "#111",
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient>` +
+      `<clipPath id="c"><rect x="10" y="10" width="${W - 20}" height="${H - 20}" rx="10"/></clipPath></defs>` +
+      `<rect x="10" y="10" width="${W - 20}" height="${H - 20}" rx="10" fill="url(#g)"/>` +
+      `<g clip-path="url(#c)">${lines}</g>` +
+      `<rect x="10.5" y="10.5" width="${W - 21}" height="${H - 21}" rx="10" fill="none" stroke="${accent}" stroke-opacity=".35"/>` +
+      `<circle cx="${cx}" cy="${cy - 14}" r="46" fill="none" stroke="${accent}" stroke-opacity=".55" stroke-width="3"/>` +
+      `<circle cx="${cx}" cy="${cy - 14}" r="34" fill="${accent}" fill-opacity=".12"/>` +
+      `<path d="M${cx - 16} ${cy + 2}V${cy - 30}l32 32V${cy - 30}" fill="none" stroke="${accent}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>` +
+      `<text x="${cx}" y="${cy + 72}" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="700" letter-spacing="6" fill="${accent}" fill-opacity=".8" text-anchor="middle">${label}</text>`,
+    "#0b0c0f",
   );
 }
 
@@ -280,17 +289,28 @@ function glyphSvg(name) {
   const sq = (s, body) =>
     `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 64 64">${body}</svg>`;
   const disc = (fill, label, fg = "#fff") =>
-    sq(64, `<circle cx="32" cy="32" r="29" fill="${fill}" stroke="#000" stroke-width="3"/><text x="32" y="43" font-family="sans-serif" font-size="30" font-weight="bold" fill="${fg}" text-anchor="middle">${label}</text>`);
-  if (n.includes("credit")) return disc("#d9b43a", "¢", "#000");
-  if (n.includes("click")) return disc("#3fb6c9", "⟳", "#000");
-  if (n.includes("tag")) return disc("#e05a2b", "T");
-  if (n.includes("advancement")) return disc("#3a77d9", "A");
-  if (n.includes("bad_publicity")) return disc("#444", "BP");
-  if (n.includes("core_damage")) return disc("#a32638", "✚");
-  if (n.includes("hand_size")) return disc("#666", "H");
-  if (n.includes("mu")) return disc("#6c4bd1", "MU");
+    sq(64, `<circle cx="32" cy="32" r="29" fill="${fill}"/><circle cx="32" cy="32" r="28" fill="none" stroke="#000" stroke-opacity=".25" stroke-width="2"/><text x="32" y="43" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="800" fill="${fg}" text-anchor="middle">${label}</text>`);
+  // Counter chips: white so the board can tint them per counter type
+  // (BoardPalette in cardrenderer.js); the number is drawn on top.
+  const chip = () =>
+    sq(64, `<circle cx="32" cy="32" r="29" fill="#fff"/><circle cx="32" cy="32" r="27" fill="none" stroke="#000" stroke-opacity=".22" stroke-width="3"/><circle cx="32" cy="32" r="21" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/>`);
+  // Symbols used inline in text and buttons; "_black" variants sit on light backgrounds.
+  if (/^(nisei|nsg)_/.test(n)) {
+    const fg = n.includes("_black") ? "#14161a" : "#fff";
+    const sym = (body) => sq(64, body.replace(/FG/g, fg));
+    if (n.includes("credit"))
+      return sym(`<circle cx="32" cy="32" r="24" fill="none" stroke="FG" stroke-width="7"/><path d="M40 24a11 11 0 1 0 0 16" fill="none" stroke="FG" stroke-width="7" stroke-linecap="round"/>`);
+    if (n.includes("click"))
+      return sym(`<path d="M46 22A18 18 0 1 0 50 34" fill="none" stroke="FG" stroke-width="7" stroke-linecap="round"/><path d="M50 12v14H36" fill="none" stroke="FG" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`);
+    if (n.includes("trash"))
+      return sym(`<path d="M16 20h32M26 20v-6h12v6M20 20l3 32h18l3-32" fill="none" stroke="FG" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`);
+    if (n.includes("agenda"))
+      return sym(`<path d="M32 8l7 15 16 2-12 11 3 16-14-8-14 8 3-16L9 25l16-2z" fill="FG"/>`);
+    return sym(`<circle cx="32" cy="32" r="12" fill="FG"/>`);
+  }
+  if (/credit|click|tag|advancement|bad_publicity|core_damage|hand_size|^mu$|generic_/.test(n)) return chip();
   if (n.includes("trash")) return disc("#8b2222", "🗑");
-  if (n.includes("strength")) return disc("#c94d3f", "S");
+  if (n.includes("strength")) return sq(64, `<circle cx="32" cy="32" r="29" fill="${n.includes("ice") ? "#b8423a" : "#3a6fb8"}"/><circle cx="32" cy="32" r="28" fill="none" stroke="#000" stroke-opacity=".3" stroke-width="2"/>`);
   if (n.includes("known")) return disc("#2a8a5a", "👁");
   if (n.includes("broken")) return disc("#555", "✕");
   if (n.includes("subroutine")) return sq(32, `<path d="M8 16h40l-10-10M48 16l-10 10" transform="scale(0.6)" stroke="#fff" stroke-width="6" fill="none"/>`);

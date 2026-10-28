@@ -352,35 +352,31 @@ function ShowDeckInfo() {
   var helpContent = $("#help-content");
   
   if (!deckParam || deckParam === "") {
-    helpContent.html("<p style='color:#ff4d4d;'>No deck data found in URL.</p>");
+    helpContent.html("<p class='error'>No deck data found in URL.</p>");
     return;
   }
   
   try {
     var deckJson = JSON.parse(LZString.decompressFromEncodedURIComponent(deckParam));
     
-    var html = "<div style='margin-bottom:15px;'>";
+    var html = "<div class='deck-info'>";
     
     // Deck name
-    if (deckJson.name) {
-      html += "<p style='font-weight:bold; color:#66ff66; font-size:18px; margin-bottom:12px;'>" + deckJson.name + "</p>";
-    } else {
-      html += "<p style='font-weight:bold; color:#66ff66; font-size:18px; margin-bottom:12px;'>Custom Deck</p>";
+    html += "<h2 class='deck-info-name'>" + (deckJson.name || "Custom deck") + "</h2>";
+    
+    // Identity
+    if (deckJson.identity && cardSet[deckJson.identity]) {
+      html += "<p class='deck-info-identity'><a href='https://netrunnerdb.com/en/card/" + deckJson.identity + "' target='_blank'>" + cardSet[deckJson.identity].title + "</a></p>";
     }
     
     // Notes
     if (deckJson.notes) {
-      html += "<p style='margin-bottom:10px; font-size:13px; line-height:1.5; color:#ccffcc; padding:10px; background:rgba(51,255,51,0.08); border-left:2px solid #33ff33;'>" + deckJson.notes + "</p>";
+      html += "<blockquote class='deck-info-notes'>" + deckJson.notes + "</blockquote>";
     }
     
     // URL link
     if (deckJson.url) {
-      html += "<p style='margin-bottom:25px;'><a href='" + deckJson.url + "' target='_blank' style='color:#66ff66; text-decoration:underline;'>More details on NetrunnerDB</a></p>";
-    }
-    
-    // Identity
-    if (deckJson.identity && cardSet[deckJson.identity]) {
-      html += "<p style='margin-bottom:15px;'><span style='color:#ffff66;'>Identity:</span> <a href='https://netrunnerdb.com/en/card/" + deckJson.identity + "' target='_blank' style='color:#33ff33; text-decoration:none;' onmouseover='this.style.textDecoration=\"underline\"' onmouseout='this.style.textDecoration=\"none\"'>" + cardSet[deckJson.identity].title + "</a></p>";
+      html += "<p><a class='deck-info-link' href='" + deckJson.url + "' target='_blank'>View on NetrunnerDB</a></p>";
     }
     
     // Count cards
@@ -390,9 +386,6 @@ function ShowDeckInfo() {
         var cid = deckJson.cards[i];
         cardCounts[cid] = (cardCounts[cid] || 0) + 1;
       }
-      
-      html += "<p style='margin-top:10px; margin-bottom:8px; font-weight:bold;'>Card List:</p>";
-      html += "<div style='font-size:12px; line-height:1.6;'>";
       
       // Group by card type
       var grouped = {};
@@ -409,21 +402,23 @@ function ShowDeckInfo() {
       for (var t = 0; t < typeOrder.length; t++) {
         var type = typeOrder[t];
         if (grouped[type] && grouped[type].length > 0) {
-          html += "<p style='color:#66ff66; margin-top:8px; margin-bottom:4px; text-transform:uppercase;'>" + type + ":</p>";
+          var typeTotal = 0;
+          for (var c = 0; c < grouped[type].length; c++) typeTotal += grouped[type][c].count;
+          html += "<div class='deck-info-group'><div class='deck-info-type'><span>" + type + "</span><span>" + typeTotal + "</span></div>";
           grouped[type].sort(function(a, b) { return a.title.localeCompare(b.title); });
           for (var c = 0; c < grouped[type].length; c++) {
-            html += "<p style='margin-left:15px;'>" + grouped[type][c].count + "x <a href='https://netrunnerdb.com/en/card/" + grouped[type][c].id + "' target='_blank' style='color:#33ff33; text-decoration:none;' onmouseover='this.style.textDecoration=\"underline\"' onmouseout='this.style.textDecoration=\"none\"'>" + grouped[type][c].title + "</a></p>";
+            html += "<a class='deck-info-card' href='https://netrunnerdb.com/en/card/" + grouped[type][c].id + "' target='_blank'><span class='deck-info-count'>" + grouped[type][c].count + "×</span>" + grouped[type][c].title + "</a>";
           }
+          html += "</div>";
         }
       }
-      html += "</div>";
     }
     
     html += "</div>";
     
     helpContent.html(html);
   } catch (e) {
-    helpContent.html("<p style='color:#ff4d4d;'>Error decoding deck: " + e.message + "</p>");
+    helpContent.html("<p class='error'>Error decoding deck: " + e.message + "</p>");
   }
 }
 
@@ -1664,37 +1659,22 @@ function Render() {
   UpdateCounterColors();
 }
 
-//Update counter colors dynamically based on run state
+//Keep counters in their per-type colours (BoardPalette in cardrenderer.js).
+//The run state is shown by the interface accent and the board vignette, so
+//counters no longer change colour during a run.
 function UpdateCounterColors() {
-  var isRunActive = document.body.classList.contains('run-active');
-  var textColor = isRunActive ? "#ff3333" : "#33ff33";
-  var strokeColor = isRunActive ? "#2d0a0a" : "#0a2d0a";
-  var tintColor = isRunActive ? 0x701414 : 0x147014;
-  
-  //update all counter objects
-  Object.keys(countersUI).forEach(function(key) {
-    if (countersUI[key].corp && countersUI[key].corp.richText) {
-      countersUI[key].corp.richText.style.fill = textColor;
-      countersUI[key].corp.richText.style.stroke = strokeColor;
-      countersUI[key].corp.sprite.tint = tintColor;
-    }
-    if (countersUI[key].runner && countersUI[key].runner.richText) {
-      countersUI[key].runner.richText.style.fill = textColor;
-      countersUI[key].runner.richText.style.stroke = strokeColor;
-      countersUI[key].runner.sprite.tint = tintColor;
-    }
+  var apply = function (counter) {
+    if (!counter || !counter.richText || !counter.sprite) return;
+    counter.richText.style.fill = BoardPalette.counterText;
+    counter.richText.style.stroke = BoardPalette.counterStroke;
+    counter.sprite.tint = BoardPalette.CounterTint(counter.key);
+  };
+  Object.keys(countersUI).forEach(function (key) {
+    apply(countersUI[key].corp);
+    apply(countersUI[key].runner);
   });
-  
-  //update all counters on cards
   if (typeof cardRenderer !== 'undefined' && cardRenderer.counters) {
-    for (var i = 0; i < cardRenderer.counters.length; i++) {
-      var counter = cardRenderer.counters[i];
-      if (counter.richText && counter.sprite) {
-        counter.richText.style.fill = textColor;
-        counter.richText.style.stroke = strokeColor;
-        counter.sprite.tint = tintColor;
-      }
-    }
+    cardRenderer.counters.forEach(apply);
   }
 }
 

@@ -1181,26 +1181,26 @@ function ShowGauntletRecap(gauntletState) {
       
       // Build opponent item with optional clickable URL
       var deckUrl = opponent.URL || '';
-      var itemStyle = 'display: flex; align-items: center; margin: 8px 0; padding: 5px; border-bottom: 1px solid rgba(51, 255, 51, 0.2);';
+      var itemClass = 'gauntlet-opponent-item';
+      var itemStyle = '';
       var onclickHandler = '';
       if (deckUrl) {
-        itemStyle += ' cursor: pointer;';
+        itemStyle += 'cursor: pointer;';
         onclickHandler = ' onclick="window.open(\'' + deckUrl + '\', \'_blank\');"';
       }
-      opponentListHtml += '<div class="gauntlet-opponent-item" style="' + itemStyle + '"' + onclickHandler + '>';
+      opponentListHtml += '<div class="' + itemClass + '" style="' + itemStyle + '"' + onclickHandler + '>';
       
       if (imageSrc) {
-        opponentListHtml += '<img src="' + imageSrc + '" style="width: 40px; height: 56px; object-fit: cover; margin-right: 10px; border: 1px solid #33ff33;" alt="' + identityTitle + '" />';
+        opponentListHtml += '<img class="gauntlet-opponent-img" src="' + imageSrc + '" alt="' + identityTitle + '" />';
       } else {
-        opponentListHtml += '<div style="width: 40px; height: 56px; margin-right: 10px; border: 1px solid #33ff33; background: #111; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #33ff33;">No Image</div>';
+        opponentListHtml += '<div class="gauntlet-opponent-img empty"></div>';
       }
       
-      opponentListHtml += '<div style="flex: 1;">';
-      opponentListHtml += '<div style="color: #33ff33; font-weight: bold;">' + opponent.name + '</div>';
-      opponentListHtml += '<div style="color: #66ff66; font-size: 12px;">' + identityTitle + '</div>';
+      opponentListHtml += '<div class="gauntlet-opponent-text">';
+      opponentListHtml += '<div class="gauntlet-opponent-name">' + opponent.name + '</div>';
+      opponentListHtml += '<div class="gauntlet-opponent-id">' + identityTitle + '</div>';
       if (perkName) {
-        var perkStyle = perkDisabled ? 'color: #ff6666; text-decoration: line-through;' : 'color: #ffcc00;';
-        opponentListHtml += '<div style="font-size: 10px; ' + perkStyle + '">' + perkName + (perkDisabled ? ' (Disabled)' : '') + '</div>';
+        opponentListHtml += '<div class="gauntlet-opponent-perk' + (perkDisabled ? ' disabled' : '') + '">' + perkName + (perkDisabled ? ' (disabled)' : '') + '</div>';
       }
       opponentListHtml += '</div>';
       opponentListHtml += '</div>';
@@ -1210,21 +1210,21 @@ function ShowGauntletRecap(gauntletState) {
   opponentListHtml += '</div>';
   
   // Create recap modal content
-  var recapHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center;">';
-  recapHtml += '<span class="menu-close" onclick="window.location.href=\'index.php\';" style="cursor: pointer; align-self: flex-end; margin-right: 10px; margin-top: 10px;">✕</span>';
-  recapHtml += '<div class="solo-logo" style="width: 100%;">';
-  recapHtml += '<h1 class="logo-text">GAUNTLET COMPLETE</h1>';
+  var recapHtml = '<div class="solo-menu gauntlet-summary">';
+  recapHtml += '<span class="menu-close" onclick="window.location.href=\'index.php\';">✕</span>';
+  recapHtml += '<div class="solo-logo">';
+  recapHtml += '<h1 class="logo-text">Gauntlet complete</h1>';
   recapHtml += '</div>';
-  recapHtml += '<div style="color: #33ff33; font-family: monospace; padding: 20px; text-align: center; width: 100%;">';
-  recapHtml += '<div style="margin-bottom: 20px; font-size: 16px;">You have defeated these decks:</div>';
+  recapHtml += '<div class="gauntlet-summary-body">';
+  recapHtml += '<p class="gauntlet-summary-lead">You defeated these decks:</p>';
   recapHtml += opponentListHtml;
-  recapHtml += '<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #33ff33; font-size: 18px;">';
-  recapHtml += '<div style="color: #ffff00; font-weight: bold;">SCORE: ' + score + '</div>';
+  recapHtml += '<div class="gauntlet-score">';
+  recapHtml += '<span>Score</span><b>' + score + '</b>';
   if (gauntletState.strictPacks && strictPacksPenalty > 0) {
-    recapHtml += '<div style="color: #ff9900; font-size: 12px; margin-top: 5px;">(Strict Packs: -' + strictPacksPenalty + ')</div>';
+    recapHtml += '<small>Strict packs −' + strictPacksPenalty + '</small>';
   }
   recapHtml += '</div>';
-  recapHtml += '<div style="display: flex; justify-content: center; margin-top: 20px;"><button class="button" onclick="window.location.href=\'index.php\';">RETURN TO MENU</button></div>';
+  recapHtml += '<button class="button primary gauntlet-summary-done" onclick="window.location.href=\'index.php\';">Back to menu</button>';
   recapHtml += '</div>';
   recapHtml += '</div>';
   
@@ -1376,29 +1376,29 @@ function ShowGauntletLostModal(gauntletState) {
       
       // Build opponent item with optional clickable URL
       var deckUrl = opponent.URL || '';
-      var itemStyle = 'display: flex; align-items: center; margin: 8px 0; padding: 5px; border-bottom: 1px solid rgba(51, 255, 51, 0.2);';
+      var itemClass = 'gauntlet-opponent-item';
+      var itemStyle = '';
       if (!isDefeated) {
-        itemStyle += ' opacity: 0.5;';
+        itemClass += ' pending';
       }
       var onclickHandler = '';
       if (deckUrl) {
-        itemStyle += ' cursor: pointer;';
+        itemStyle += 'cursor: pointer;';
         onclickHandler = ' onclick="window.open(\'' + deckUrl + '\', \'_blank\');"';
       }
-      opponentListHtml += '<div class="gauntlet-opponent-item" style="' + itemStyle + '"' + onclickHandler + '>';
+      opponentListHtml += '<div class="' + itemClass + '" style="' + itemStyle + '"' + onclickHandler + '>';
       
       if (imageSrc) {
-        opponentListHtml += '<img src="' + imageSrc + '" style="width: 40px; height: 56px; object-fit: cover; margin-right: 10px; border: 1px solid #33ff33;' + (isDefeated ? '' : ' filter: grayscale(80%);') + '" alt="' + identityTitle + '" />';
+        opponentListHtml += '<img class="gauntlet-opponent-img" src="' + imageSrc + '" alt="' + identityTitle + '" />';
       } else {
-        opponentListHtml += '<div style="width: 40px; height: 56px; margin-right: 10px; border: 1px solid #33ff33; background: #111; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #33ff33;">No Image</div>';
+        opponentListHtml += '<div class="gauntlet-opponent-img empty"></div>';
       }
       
-      opponentListHtml += '<div style="flex: 1;">';
-      opponentListHtml += '<div style="color: #33ff33; font-weight: bold;">' + opponent.name + (isDefeated ? ' ✓' : '') + '</div>';
-      opponentListHtml += '<div style="color: #66ff66; font-size: 12px;">' + identityTitle + '</div>';
+      opponentListHtml += '<div class="gauntlet-opponent-text">';
+      opponentListHtml += '<div class="gauntlet-opponent-name">' + opponent.name + (isDefeated ? ' ✓' : '') + '</div>';
+      opponentListHtml += '<div class="gauntlet-opponent-id">' + identityTitle + '</div>';
       if (perkName) {
-        var perkStyle = perkDisabled ? 'color: #ff6666; text-decoration: line-through;' : 'color: #ffcc00;';
-        opponentListHtml += '<div style="font-size: 10px; ' + perkStyle + '">' + perkName + (perkDisabled ? ' (Disabled)' : '') + '</div>';
+        opponentListHtml += '<div class="gauntlet-opponent-perk' + (perkDisabled ? ' disabled' : '') + '">' + perkName + (perkDisabled ? ' (disabled)' : '') + '</div>';
       }
       opponentListHtml += '</div>';
       opponentListHtml += '</div>';
@@ -1412,23 +1412,21 @@ function ShowGauntletLostModal(gauntletState) {
   var totalOpponents = gauntletState.opponents ? gauntletState.opponents.length : 0;
   
   // Create lost modal content (similar to recap but with GAUNTLET LOST title)
-  var lostHtml = '<div class="solo-menu" style="display: flex; flex-direction: column; align-items: center;">';
-  lostHtml += '<span class="menu-close" onclick="window.location.href=\'index.php\';" style="cursor: pointer; align-self: flex-end; margin-right: 10px; margin-top: 10px;">✕</span>';
-  lostHtml += '<div class="solo-logo" style="width: 100%;">';
-  lostHtml += '<h1 class="logo-text" style="color: var(--crt-red); text-shadow: 0 0 5px var(--crt-red), 0 0 15px var(--glow-red), 0 0 35px var(--glow-red-dark);">GAUNTLET LOST</h1>';
+  var lostHtml = '<div class="solo-menu gauntlet-summary">';
+  lostHtml += '<span class="menu-close" onclick="window.location.href=\'index.php\';">✕</span>';
+  lostHtml += '<div class="solo-logo">';
+  lostHtml += '<h1 class="logo-text gauntlet-lost-title">Gauntlet lost</h1>';
   lostHtml += '</div>';
-  lostHtml += '<div style="color: #33ff33; font-family: monospace; padding: 20px; text-align: center; width: 100%;">';
-  lostHtml += '<div style="margin-bottom: 20px; font-size: 16px;">Progress: ' + defeatedCount + ' / ' + totalOpponents + ' opponents defeated</div>';
+  lostHtml += '<div class="gauntlet-summary-body">';
+  lostHtml += '<p class="gauntlet-summary-lead">' + defeatedCount + ' of ' + totalOpponents + ' opponents defeated</p>';
   lostHtml += opponentListHtml;
-  lostHtml += '<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #33ff33; font-size: 18px;">';
-  lostHtml += '<div style="color: #ffff00; font-weight: bold;">SCORE: ' + score + '</div>';
+  lostHtml += '<div class="gauntlet-score">';
+  lostHtml += '<span>Score</span><b>' + score + '</b>';
   if (gauntletState.strictPacks && strictPacksPenalty > 0) {
-    lostHtml += '<div style="color: #ff9900; font-size: 12px; margin-top: 5px;">(Strict Packs: -' + strictPacksPenalty + ')</div>';
+    lostHtml += '<small>Strict packs −' + strictPacksPenalty + '</small>';
   }
   lostHtml += '</div>';
-  lostHtml += '<div style="display: flex; justify-content: center; margin-top: 20px;">';
-  lostHtml += '<button class="button" onclick="window.location.href=\'index.php\';">RETURN TO MENU</button>';
-  lostHtml += '</div>';
+  lostHtml += '<button class="button primary gauntlet-summary-done" onclick="window.location.href=\'index.php\';">Back to menu</button>';
   lostHtml += '</div>';
   lostHtml += '</div>';
   
@@ -1455,6 +1453,16 @@ function ShowGauntletLostModal(gauntletState) {
 }
 
 /**
+ * Sound and vibration for a game moment (mobile/feedback.js), if available.
+ *
+ * @method PlayFeedback
+ * @param {String} name e.g. "run", "damage", "score", "win", "lose"
+ */
+function PlayFeedback(name) {
+  if (typeof Feedback !== "undefined") Feedback.play(name);
+}
+
+/**
  * Player wins the game (the game ends).<br/>Logs a message and disables command prompt.
  *
  * @method PlayerWin
@@ -1462,6 +1470,10 @@ function ShowGauntletLostModal(gauntletState) {
  * @param {String} msgstr reason for win
  */
 function PlayerWin(player, msgstr) {
+  var viewerWon = player === viewingPlayer;
+  document.body.classList.remove('run-active');
+  document.body.classList.add('game-over', viewerWon ? 'game-won' : 'game-lost');
+  PlayFeedback(viewerWon ? "win" : "lose");
   //old code from before there was a decisionphase
   /*
   $("#cmdform").hide();
@@ -1526,20 +1538,12 @@ function PlayerWin(player, msgstr) {
     gtag('event', 'game_end', eventParams);
   }  
 
-  var winnerMessage = "";
-  var watermarkMessage = "";
-  if (winner == corp) {
-    winnerMessage = "Corp wins";
-    watermarkMessage = "CORP WINS!";
-  } else {
-    winnerMessage = "Runner wins";
-    watermarkMessage = "RUNNER WINS!";
-  }
+  var winnerMessage = winner == corp ? "Corp wins" : "Runner wins";
 
-  // Change the watermark text
+  // Change the watermark text into the result banner
   var watermark = document.querySelector('.netrunner-bg-watermark');
   if (watermark) {
-    watermark.textContent = watermarkMessage;
+    watermark.textContent = viewerWon ? "Victory" : "Defeat";
   }
 
   var winPhase = {

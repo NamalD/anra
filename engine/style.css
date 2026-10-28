@@ -679,14 +679,15 @@ input[type="checkbox"]:disabled {
   background: transparent;
   border: 0;
 }
-#loading .modal-content-inactive::before {
+#loading .modal-content-inactive::after {
   content: "";
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 3px solid var(--surface-4);
-  border-top-color: var(--accent);
-  animation: spin 0.8s linear infinite;
+  width: 180px;
+  height: 4px;
+  border-radius: 4px;
+  background:
+    linear-gradient(var(--accent), var(--accent)) left / calc(var(--progress, 0) * 100%) 100% no-repeat,
+    var(--surface-3);
+  transition: background-size var(--med) var(--ease);
 }
 #loading #loading-text {
   font-size: 15px;
@@ -809,11 +810,51 @@ input[type="checkbox"]:disabled {
   background: var(--line);
 }
 
+/* Game speed: three checkboxes shown as a segmented control */
+.segmented {
+  display: inline-flex;
+  flex: none;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.segmented label {
+  position: relative;
+  cursor: pointer;
+}
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.segmented span {
+  display: block;
+  padding: 7px 11px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: background var(--med) var(--ease), color var(--med) var(--ease);
+}
+.segmented input:checked + span {
+  background: var(--surface-4);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+.segmented label:active span {
+  transform: scale(0.95);
+}
+
 /* Speed picker built from three checkboxes */
 .speed-options {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+.speed-options {
+  grid-column: 1 / -1;
+  justify-content: space-between;
 }
 .speed-options .speed-label {
   margin-right: auto;
@@ -1095,7 +1136,9 @@ input[type="checkbox"]:disabled {
 }
 /* Danger vignette that fades in for the length of a run */
 .content::after {
-  background: radial-gradient(130% 95% at 50% 50%, transparent 55%, rgba(255, 70, 90, 0.16) 100%);
+  background:
+    radial-gradient(110% 70% at 50% 50%, transparent 50%, rgba(255, 60, 80, 0.2) 100%),
+    linear-gradient(rgba(255, 60, 80, 0.04), rgba(255, 60, 80, 0.04));
   opacity: 0;
   transition: opacity 600ms var(--ease);
 }
@@ -1118,6 +1161,28 @@ body.run-active .content::after {
   text-transform: uppercase;
   color: var(--accent);
   opacity: 0.07;
+}
+
+/* Game over: the watermark becomes the result banner */
+@keyframes result-in {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); letter-spacing: 0.2em; }
+  60% { opacity: 1; }
+}
+body.game-over .netrunner-bg-watermark {
+  z-index: 1;
+  font-size: 15vmin;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  opacity: 0.9;
+  animation: result-in 900ms var(--ease-spring) both;
+}
+body.game-won .netrunner-bg-watermark {
+  color: var(--success);
+  text-shadow: 0 0 60px rgba(79, 209, 161, 0.45);
+}
+body.game-lost .netrunner-bg-watermark {
+  color: var(--danger);
+  text-shadow: 0 0 60px rgba(255, 107, 116, 0.4);
 }
 
 canvas {
@@ -1512,6 +1577,133 @@ canvas {
   color: var(--text);
 }
 
+.deck-info-name {
+  margin: 0 0 2px !important;
+  font-size: 20px !important;
+}
+.deck-info-identity a {
+  color: var(--text-muted);
+}
+.deck-info-notes {
+  font-size: 14px;
+}
+.deck-info-link {
+  font-weight: 600;
+}
+.deck-info-group {
+  margin-top: 14px;
+}
+.deck-info-type {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.deck-info-card {
+  display: flex;
+  gap: 8px;
+  padding: 5px 2px;
+  color: var(--text);
+  font-size: 14px;
+}
+.deck-info-count {
+  min-width: 22px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* End of a gauntlet: summary of opponents and score */
+.gauntlet-summary-lead {
+  margin-bottom: 10px;
+  color: var(--text-muted);
+}
+.gauntlet-summary-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gauntlet-opponent-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.gauntlet-opponent-item.pending {
+  opacity: 0.45;
+}
+.gauntlet-opponent-img {
+  width: 40px;
+  height: 56px;
+  flex: none;
+  border-radius: 5px;
+  object-fit: cover;
+  background: var(--surface-3);
+}
+.gauntlet-opponent-item.pending .gauntlet-opponent-img {
+  filter: grayscale(0.8);
+}
+.gauntlet-opponent-text {
+  flex: 1;
+  min-width: 0;
+}
+.gauntlet-opponent-name {
+  font-weight: 650;
+}
+.gauntlet-opponent-id {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.gauntlet-opponent-perk {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warning);
+}
+.gauntlet-opponent-perk.disabled {
+  color: var(--danger);
+  text-decoration: line-through;
+}
+.gauntlet-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 14px 4px 0;
+  border-top: 1px solid var(--line);
+}
+.gauntlet-score span {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.gauntlet-score b {
+  font-size: 28px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.gauntlet-score small {
+  flex-basis: 100%;
+  text-align: right;
+  font-size: 12px;
+  color: var(--warning);
+}
+.gauntlet-summary-done {
+  width: 100%;
+  margin-top: 12px;
+}
+.gauntlet-lost-title {
+  color: var(--danger) !important;
+}
+
 /* Debug menu: card picker */
 .debug-card-group {
   display: flex;
@@ -1626,5 +1818,16 @@ canvas {
     width: 38px !important;
     height: 38px !important;
     background-size: 100% 100% !important;
+  }
+}
+
+/* Respect the system "reduce motion" setting */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

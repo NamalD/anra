@@ -2,6 +2,36 @@
 //Ideally we would remove the object 'namespace' encapsulation and CardRenderer. references and instead use export/import
 //I did have it like that at first but my current project has a bunch of old non-module scripts and the two approaches weren't playing nicely
 
+//Colours for the board, shared with init.js. Highlight glows are white
+//textures tinted with these; counters are white icons tinted per type with
+//the number drawn on top.
+var BoardPalette = {
+  select: 0xa898ff, //hovered or chosen (was purple)
+  available: 0xffffff, //can be chosen
+  danger: 0xff5a66, //encountering, or a warning highlight
+  progress: 0x5aa9ff, //in progress, not a choice to click
+  warn: 0xffc94a, //interfacing / alternative choice
+  counterText: "#ffffff",
+  counterStroke: "#0b0c0f",
+  counterTints: {
+    creditPool: 0xc0912e,
+    credits: 0xc0912e,
+    clickTracker: 0x5c6ae0,
+    _renderOnlyHandSize: 0x6b7488,
+    tags: 0xd0572f,
+    _renderOnlyMU: 0x8f6ae6,
+    badPublicity: 0x5d626e,
+    coreDamage: 0xc03c50,
+    advancement: 0x3279d6,
+    virus: 0xc03c50,
+    power: 0x9256d6,
+    agenda: 0x2f9e6d,
+  },
+  CounterTint: function (key) {
+    return this.counterTints[key] || 0x4c5466;
+  },
+};
+
 var CardRenderer = {
   //pile the cards on top of each other. first is on bottom of pile.
   Cascade: class {
@@ -154,8 +184,8 @@ var CardRenderer = {
       this.prefix = "";
 	  this.postfix = "";
       this.sprite = new PIXI.Sprite(this.texture);
-      // Dark green tint for icon (darker than text) - or red during runs
-      this.sprite.tint = document.body.classList.contains('run-active') ? 0x701414 : 0x147014; // hex dark green/red
+      // Each kind of counter has its own colour; the number is drawn on top in white
+      this.sprite.tint = BoardPalette.CounterTint(key);
       this.sprite.renderer = this;
       this.app.stage.addChild(this.sprite); //add sprite to the stage container (so it renders)
       //include a particle container for effects
@@ -167,11 +197,13 @@ var CardRenderer = {
       // move the counter to the given position
       this.sprite.anchor.set(0.5, 0.5);
 
-      this.richText = new PIXI.Text(this.address[this.key], style); // style already bright green
+      this.richText = new PIXI.Text(this.address[this.key], style);
       this.richText.anchor.set(0.5, 0.5);
       this.app.stage.addChild(this.richText);
 
-      //set scale
+      //set scale (baseScale is kept so a change can briefly pop the number)
+      this.baseScale = scale;
+      this.pop = 0;
       this.sprite.scale.x =
         this.richText.scale.x =
         this.sprite.scale.y =
@@ -218,13 +250,13 @@ var CardRenderer = {
           if (availability > 0) {
             this.glowSprite.visible = true;
             if (this.sprite.hover)
-              this.glowSprite.tint = parseInt("D800FF", 16);
+              this.glowSprite.tint = BoardPalette.select;
             //purple
-            else this.glowSprite.tint = parseInt("FFFFFF", 16); //white
+            else this.glowSprite.tint = BoardPalette.available; //white
           } else if (availability == -2) {
             //not interactive, just to highlight something
             this.glowSprite.visible = true;
-            this.glowSprite.tint = parseInt("FF0000", 16); //red
+            this.glowSprite.tint = BoardPalette.danger; //red
           } else this.glowSprite.visible = false;
         }
         //animate changes
@@ -244,8 +276,18 @@ var CardRenderer = {
               );
             this.richText.text = this.prefix + newValue + this.postfix;
             this.animateCountdown = 6; //time before next animate (dunno what units this is in? maybe ms but seems a bit slow if so?)
+            this.pop = 1;
+            if (this.key == "creditPool" && newValue > oldValue && typeof Feedback !== "undefined") Feedback.play("credit");
           }
         } else this.animateCountdown -= delta;
+        //pop: scale up on change, then ease back (easeOutBack-ish)
+        if (this.pop > 0) {
+          this.pop = Math.max(0, this.pop - delta * 0.07);
+          var t = this.pop;
+          var bump = 1 + 0.38 * t * t;
+          this.richText.scale.x = this.richText.scale.y = this.baseScale * bump;
+          this.sprite.scale.x = this.sprite.scale.y = this.baseScale * (1 + 0.16 * t * t);
+        }
       }, this);
     }
 
@@ -602,37 +644,37 @@ var CardRenderer = {
         if (this.availability == -3) {
           //accessing
           this.glowSprite.visible = true;
-          this.glowSprite.tint = parseInt("0000FF", 16); //blue
+          this.glowSprite.tint = BoardPalette.progress; //blue
         } else if (this.availability > 0) {
           this.glowSprite.visible = true;
           if (this.availability == 3) {
             //special case - toggled as selection
             //if (this.hover) this.glowSprite.tint = parseInt("FFFFFF",16); //white
-            this.glowSprite.tint = parseInt("D800FF", 16); //purple
+            this.glowSprite.tint = BoardPalette.select; //purple
           } else if (this.hover) {
             if (!this.sprite.dragging) {
               if (this.availability == 2)
-                this.glowSprite.tint = parseInt("FFD800", 16);
+                this.glowSprite.tint = BoardPalette.warn;
               //yellow (to indicate it won't immediately activate)
-              else this.glowSprite.tint = parseInt("D800FF", 16); //purple
+              else this.glowSprite.tint = BoardPalette.select; //purple
             } else if (pixi_playThreshold(this)) {
               //there were some special red cases but they are now all purple for consistency (purple means "this will happen when you release")
               //if (executingCommand=="trash") this.glowSprite.tint = parseInt("FF0000",16); //special case: dragging to trash (e.g. before install), red
               //else if (executingCommand=="discard") this.glowSprite.tint = parseInt("FF0000",16); //special case: dragging to discard, red
               //else
-              this.glowSprite.tint = parseInt("D800FF", 16); //purple
+              this.glowSprite.tint = BoardPalette.select; //purple
             } else this.glowSprite.visible = false; //don't glow while dragging if nothing will happen
           } else {
             //if a card is being dragged from hand, don't glow unless some important reason to
             var hand = PlayerHand(activePlayer);
             if (pixi_draggingData !== null) this.glowSprite.visible = false;
-            else this.glowSprite.tint = parseInt("FFFFFF", 16); //white
+            else this.glowSprite.tint = BoardPalette.available; //white
           }
         } else if (currentPhase && currentPhase.context == this.card) {
 			//indicate that an ability on this card is activating
 			this.glowSprite.alpha=0.4;
 			this.glowSprite.visible = true;
-			this.glowSprite.tint = parseInt("D800FF", 16); //purple
+			this.glowSprite.tint = BoardPalette.select; //purple
 		} else {
           if (pixi_draggingData !== null || OptionsAreOnlyUniqueServers()) {
             //i.e. something is being dragged or a server selection is being made
@@ -657,22 +699,22 @@ var CardRenderer = {
             }
             if (validServer) {
               this.glowSprite.visible = true;
-              this.glowSprite.tint = parseInt("FFFFFF", 16); //white
+              this.glowSprite.tint = BoardPalette.available; //white
               if (MouseIsOverServer(server)) {
                 if (pixi_playThreshold(pixi_draggingCard))
-                  this.glowSprite.tint = parseInt("D800FF", 16); //purple
+                  this.glowSprite.tint = BoardPalette.select; //purple
               }
             } //not a server? maybe a potential host
             else {
               if (CardIsValidHostOption(this.card)) {
                 this.glowSprite.visible = true;
-                this.glowSprite.tint = parseInt("FFFFFF", 16); //white
+                this.glowSprite.tint = BoardPalette.available; //white
                 //if play threshold is met, this may be the chosen host
                 if (
                   pixi_playThreshold(pixi_draggingCard) &&
                   this.isClosestHost
                 ) {
-                  this.glowSprite.tint = parseInt("D800FF", 16); //purple
+                  this.glowSprite.tint = BoardPalette.select; //purple
                 }
               }
             }
@@ -1562,13 +1604,21 @@ var CardRenderer = {
 
       //set up font styles (https://pixijs.io/pixi-text-style/)
       this.counterStyle = new PIXI.TextStyle({
-        fontFamily: "PlayBoldNisei",
-        fontSize: 48,
-        fontWeight: "bold",
-        fill: document.body.classList.contains('run-active') ? "#ff3333" : "#33ff33", // bright green text (or red during runs)
-        stroke: document.body.classList.contains('run-active') ? "#2d0a0a" : "#0a2d0a", // darker green stroke for contrast (or red during runs)
-        strokeThickness: 8,
+        fontFamily: "Inter, PlayBoldNisei, sans-serif",
+        fontSize: 46,
+        fontWeight: "800",
+        fill: BoardPalette.counterText,
+        stroke: BoardPalette.counterStroke,
+        strokeThickness: 7,
+        lineJoin: "round",
       });
+      //Inter is a web font: redraw the counters once it has loaded
+      if (document.fonts && document.fonts.load) {
+        var counterStyle = this.counterStyle;
+        document.fonts.load('800 46px Inter').then(function () {
+          counterStyle.styleID++;
+        });
+      }
       this.typeStyle = new PIXI.TextStyle({
         fontFamily: "PlayBoldNisei",
         fontSize: 13,
@@ -1623,30 +1673,30 @@ var CardRenderer = {
           this.iceGlow.x = x;
           this.iceGlow.y = y;
           this.iceGlow.scale.x = 0.4;
-          if (accessingCard || accessedCards.root.length > 0 || accessedCards.cards.length > 0) this.iceGlow.tint = parseInt("0000FF", 16);
+          if (accessingCard || accessedCards.root.length > 0 || accessedCards.cards.length > 0) this.iceGlow.tint = BoardPalette.progress;
           //accessing (blue)
           else if (movement) {
             //show at front of server just like if ice was passed
-            this.iceGlow.tint = parseInt("0000FF", 16); //movement (blue)
+            this.iceGlow.tint = BoardPalette.progress; //movement (blue)
             this.iceGlow.rotation = Math.PI;
             this.iceGlow.scale.x = 0.5;
             this.iceGlow.y += 185; //tweak to feel right
-          } else this.iceGlow.tint = parseInt("0000FF", 16); //other (blue) by convention indicates 'in progress, not a choice to click'
+          } else this.iceGlow.tint = BoardPalette.progress; //other (blue) by convention indicates 'in progress, not a choice to click'
         } //approaching ice
         else {
           this.iceGlow.visible = true;
           this.iceGlow.x = card.sprite.x;
           this.iceGlow.y = card.sprite.y;
           this.iceGlow.scale.x = 0.5;
-          if (glow == 1) this.iceGlow.tint = parseInt("FF0000", 16);
+          if (glow == 1) this.iceGlow.tint = BoardPalette.danger;
           //encountering (red)
-          else if (glow == 2) this.iceGlow.tint = parseInt("FFFF00", 16);
+          else if (glow == 2) this.iceGlow.tint = BoardPalette.warn;
           //interfacing (yellow)
           else if (glow == 3) {
-            this.iceGlow.tint = parseInt("0000FF", 16); //all broken/movement (blue)
+            this.iceGlow.tint = BoardPalette.progress; //all broken/movement (blue)
             this.iceGlow.rotation = Math.PI;
           } else {
-            this.iceGlow.tint = parseInt("0000FF", 16); //approaching (blue) by convention indicates 'in progress, not a choice to click'
+            this.iceGlow.tint = BoardPalette.progress; //approaching (blue) by convention indicates 'in progress, not a choice to click'
             this.iceGlow.y -= 40; //move indicator to match cropped ice
           }
         }
@@ -1727,14 +1777,12 @@ var CardRenderer = {
               }
             }
           }
-          var loadingText =
-            "Loading " +
-            Math.floor(
-              (100 * (this.loadingMax - this.loadingTextures.length)) /
-                this.loadingMax
-            ) +
-            "%";
-          $("#loading-text").html(loadingText);
+          var loadingPercent = Math.floor(
+            (100 * (this.loadingMax - this.loadingTextures.length)) /
+              this.loadingMax
+          );
+          $("#loading-text").html("Loading " + loadingPercent + "%");
+          $("#loading").css("--progress", loadingPercent / 100); //drives the progress bar
         }
 
         //fps display
@@ -1761,10 +1809,10 @@ var CardRenderer = {
           this.archivesIndicator.visible = true;
           if (MouseIsOverServer(corp.archives)) {
             if (pixi_playThreshold(pixi_draggingCard))
-              this.archivesIndicator.tint = parseInt("D800FF", 16);
+              this.archivesIndicator.tint = BoardPalette.select;
             //purple
-            else this.archivesIndicator.tint = parseInt("FFFFFF", 16); //white
-          } else this.archivesIndicator.tint = parseInt("FFFFFF", 16); //white
+            else this.archivesIndicator.tint = BoardPalette.available; //white
+          } else this.archivesIndicator.tint = BoardPalette.available; //white
         }
         if (corp.archives.xStart == corp.archives.xEnd)
           this.archivesIndicator.x =
@@ -1779,10 +1827,10 @@ var CardRenderer = {
           this.newRemoteIndicator.visible = true;
           if (MouseIsOverServer(null)) {
             if (pixi_playThreshold(pixi_draggingCard))
-              this.newRemoteIndicator.tint = parseInt("D800FF", 16);
+              this.newRemoteIndicator.tint = BoardPalette.select;
             //purple
-            else this.newRemoteIndicator.tint = parseInt("FFFFFF", 16); //white
-          } else this.newRemoteIndicator.tint = parseInt("FFFFFF", 16); //white
+            else this.newRemoteIndicator.tint = BoardPalette.available; //white
+          } else this.newRemoteIndicator.tint = BoardPalette.available; //white
         }
         var largestServerX = corp.HQ.xEnd;
         if (corp.remoteServers.length > 0)
@@ -1796,9 +1844,9 @@ var CardRenderer = {
         this.serverText.visible = false;
         if (pixi_draggingData !== null || OptionsAreOnlyUniqueServers()) {
           //i.e. something is being dragged or a server selection is being made
-          var serverTint = parseInt("FFFFFF", 16); //white
+          var serverTint = BoardPalette.available; //white
           if (pixi_playThreshold(pixi_draggingCard))
-            serverTint = parseInt("D800FF", 16); //purple
+            serverTint = BoardPalette.select; //purple
           this.serverSelector.tint = serverTint;
           this.serverText.tint = serverTint;
           for (var i = 0; i < validOptions.length; i++) {
@@ -1873,9 +1921,9 @@ var CardRenderer = {
           this.iceGlow.scale.y = 0.5;
           if (pixi_draggingCard !== null) {
             if (pixi_playThreshold(pixi_draggingCard))
-              this.iceGlow.tint = parseInt("D800FF", 16);
+              this.iceGlow.tint = BoardPalette.select;
             //purple
-            else this.iceGlow.tint = parseInt("FFFFFF", 16); //white
+            else this.iceGlow.tint = BoardPalette.available; //white
           } else this.iceGlow.visible = false;
         }
 		
@@ -1905,7 +1953,7 @@ var CardRenderer = {
 		if (hex.length == 1) hex = "0" + hex;
 		var srtintcol = parseInt(hex+hex+hex,16);
         for (var i = 0; i < this.subroutineChoices.length; i++) {
-		  if (this.subroutineChoices[i].visible && this.subroutineChoices[i].tint != 0xD800FF) {
+		  if (this.subroutineChoices[i].visible && this.subroutineChoices[i].tint != BoardPalette.select) {
 			this.subroutineChoices[i].tint = srtintcol;
 		  }
 	    }
@@ -2312,13 +2360,13 @@ var CardRenderer = {
               //apply click callback if provided
               newSrChoice.interactive = true;
               newSrChoice.pointerover = function (mouseData) {
-                this.tint = parseInt("D800FF", 16); //purple (by our convention this means 'will immediately activate')
+                this.tint = BoardPalette.select; //purple (by our convention this means 'will immediately activate')
               };
               newSrChoice.pointerout = function (mouseData) {
-                this.tint = parseInt("FFFFFF", 16); //white (by our convention this means 'an active choice')
+                this.tint = BoardPalette.available; //white (by our convention this means 'an active choice')
               };
               newSrChoice.on("pointerdown", function () {
-                this.tint = parseInt("D800FF", 16); //purple
+                this.tint = BoardPalette.select; //purple
                 //});  //pointerout and pointerupoutside don't seem to be firing properly so this (firing on pointerdown with a delay) is my current solution
                 var srchosen = this.subroutine;
                 setTimeout(function () {
@@ -2343,7 +2391,7 @@ var CardRenderer = {
             card.renderer.sprite.addChild(this.subroutineChoices[i]);
             this.subroutineChoices[i].x = 10; //centre in correct area of card
             this.subroutineChoices[i].visible = true;
-            this.subroutineChoices[i].tint = parseInt("FFFFFF", 16); //white by default
+            this.subroutineChoices[i].tint = BoardPalette.available; //white by default
           }
         }
       }

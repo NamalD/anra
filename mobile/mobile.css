@@ -36,28 +36,43 @@ html.anra-installed .fullscreen-button {
   inset: 0;
   z-index: 100000;
   overflow-y: auto;
-  background: rgba(4, 8, 6, 0.97);
-  color: #e3f5e3;
-  font: 16px/1.5 system-ui, sans-serif;
+  background: rgba(8, 9, 12, 0.94);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--text);
   padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
-  animation: anra-reader-in 0.15s ease-out;
+  animation: scrim-in var(--med) var(--ease);
   -webkit-user-select: text;
   user-select: text;
 }
-@keyframes anra-reader-in {
-  from { opacity: 0; transform: scale(0.97); }
+.anra-reader.closing {
+  animation: anra-reader-out var(--med) var(--ease) forwards;
+}
+@keyframes anra-reader-out {
+  to { opacity: 0; }
 }
 .anra-reader-close {
   position: fixed;
-  top: calc(10px + env(safe-area-inset-top));
-  right: 10px;
+  top: calc(12px + env(safe-area-inset-top));
+  right: 12px;
+  z-index: 1;
   width: 44px;
   height: 44px;
-  border: 1px solid #2f5f2f;
-  border-radius: 22px;
-  background: rgba(10, 20, 12, 0.9);
-  color: #33ff33;
-  font-size: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: transparent;
+  font-size: 0;
+  display: grid;
+  place-items: center;
+}
+.anra-reader-close::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: var(--text);
+  -webkit-mask: var(--icon-close) center / contain no-repeat;
+  mask: var(--icon-close) center / contain no-repeat;
 }
 .anra-reader-body {
   max-width: 560px;
@@ -65,77 +80,90 @@ html.anra-installed .fullscreen-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 .anra-reader-image {
   width: min(78vw, 46vh * 300 / 419, 360px);
   aspect-ratio: 300 / 419;
   border-radius: 4.5% / 3.2%;
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.7);
-  background: #1a2420;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: var(--surface-2);
+  animation: anra-card-in 420ms var(--ease-spring);
+}
+@keyframes anra-card-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.92) rotate(-2deg); }
 }
 .anra-reader-info {
   width: 100%;
+  animation: sheet-in var(--slow) var(--ease) 60ms backwards;
 }
 .anra-reader-info h2 {
   margin: 0 0 2px;
-  font-size: 22px;
-  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 .anra-reader-type {
-  color: #8fd68f;
+  margin-bottom: 14px;
+  color: var(--text-muted);
   text-transform: capitalize;
-  margin-bottom: 12px;
 }
 .anra-reader-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .anra-reader-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 56px;
-  padding: 6px 8px;
-  border: 1px solid #2f5f2f;
-  border-radius: 8px;
-  background: #0e1a12;
+  min-width: 60px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
 }
 .anra-reader-stat b {
-  font-size: 18px;
-  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .anra-reader-stat span {
   font-size: 11px;
-  color: #8fb08f;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--text-muted);
 }
 .anra-reader-text {
   font-size: 17px;
+  line-height: 1.55;
 }
 .anra-reader-symbol {
-  color: #33ff33;
-  font-weight: 600;
+  color: var(--accent);
+  font-weight: 650;
 }
 .anra-reader-errata {
   display: block;
   margin-top: 8px;
-  color: #c9c98f;
+  color: var(--warning);
   font-size: 14px;
 }
 .anra-reader-flavor {
-  margin-top: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
   font-style: italic;
-  color: #9fb59f;
+  color: var(--text-muted);
 }
 .anra-reader-faction {
-  margin-top: 14px;
-  font-size: 13px;
-  color: #6f8f6f;
+  margin-top: 16px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  color: var(--text-faint);
 }
 
 /* Landscape phones: card beside its text. */
@@ -156,15 +184,21 @@ html.anra-installed .fullscreen-button {
 .anra-update {
   position: fixed;
   left: 50%;
-  top: calc(64px + env(safe-area-inset-top));
+  top: calc(72px + env(safe-area-inset-top));
   transform: translateX(-50%);
   z-index: 100001;
   max-width: calc(100vw - 32px);
-  padding: 10px 14px;
-  border: 1px solid #33ff33;
-  border-radius: 8px;
-  background: rgba(5, 12, 8, 0.95);
-  color: #b9ffb9;
-  font: 14px/1.4 monospace;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 550;
   pointer-events: none;
+  animation: anra-toast-in var(--slow) var(--ease);
+}
+@keyframes anra-toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
 }

@@ -70,12 +70,6 @@
       if (e.target && e.target.tagName === "CANVAS") e.preventDefault();
     });
 
-    // A light tap of haptic feedback on the game's buttons.
-    document.addEventListener("pointerdown", function (e) {
-      if (!navigator.vibrate || e.pointerType !== "touch") return;
-      if (e.target.closest && e.target.closest("button, .button, .menu-item")) navigator.vibrate(8);
-    });
-
     // Keep the screen on while a game is open; games are slow-paced and the
     // phone would otherwise dim mid-turn. The lock drops when the app is
     // backgrounded, so take it again on return.
@@ -98,13 +92,14 @@
 
   function addMenuEntries() {
     var setupUrl = "mobile/setup.html";
-    document.querySelectorAll(".menu-buttons, #menu-buttons").forEach(function (menu) {
-      if (menu.querySelector(".anra-images-entry")) return;
-      var item = document.createElement("div");
-      item.className = "menu-item anra-images-entry";
-      item.textContent = "CARD IMAGES";
-      item.addEventListener("click", function () { location.href = setupUrl; });
-      menu.appendChild(item);
-    });
+    var menu = document.getElementById("menu-buttons");
+    if (!menu || menu.querySelector(".anra-images-entry")) return;
+    var item = document.createElement("div");
+    item.className = "menu-item anra-images-entry";
+    item.dataset.icon = "images";
+    item.innerHTML =
+      '<span class="mi-title">Card images</span><span class="mi-sub">Download art for offline play</span>';
+    item.addEventListener("click", function () { location.href = setupUrl; });
+    menu.appendChild(item);
   }
 })();

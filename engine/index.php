@@ -10,94 +10,7 @@ $version = "0.6.13-BETA";
   <link href="images/favicon.ico" rel="icon">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css?<?php echo filemtime('style.css'); ?>" />
-  <style>
-    /* Achievements Panel Styles */
-    .achievements-panel {
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      overflow: hidden;
-    }
-    .achievements-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--crt-green-dim);
-    }
-    .achievements-title {
-      font-size: 1.2rem;
-      color: var(--crt-green);
-      text-shadow: 0 0 10px var(--crt-green);
-    }
-    .achievements-back {
-      background: transparent;
-      border: 1px solid var(--crt-green-dim);
-      color: var(--crt-green-muted);
-      padding: 4px 12px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.85rem;
-      transition: all 0.2s;
-    }
-    .achievements-back:hover {
-      color: var(--crt-green);
-      border-color: var(--crt-green);
-      text-shadow: 0 0 5px var(--crt-green);
-    }
-    .achievements-content {
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .achievements-section-header {
-      font-size: 0.85rem;
-      color: var(--crt-green-muted);
-      padding: 8px 0 4px;
-      border-bottom: 1px dashed var(--crt-green-dim);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    
-    /* Achievements List */
-    .achievements-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .achievement-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px;
-      background: rgba(51, 255, 51, 0.05);
-      border: 1px solid var(--crt-green-dim);
-      cursor: help;
-      transition: all 0.2s;
-    }
-    .achievement-row:hover {
-      background: rgba(51, 255, 51, 0.1);
-      border-color: var(--crt-green);
-    }
-    .achievement-incomplete {
-      opacity: 0.4;
-      filter: grayscale(0.5);
-    }
-    .achievement-incomplete:hover {
-      opacity: 0.6;
-    }
-    .achievement-name {
-      font-size: 0.9rem;
-      color: var(--crt-green);
-    }
-    .achievement-date {
-      font-size: 0.85rem;
-      color: var(--crt-green-muted);
-      font-family: monospace;
-    }
-  </style>
+  <link rel="stylesheet" href="menu.css?<?php echo filemtime('menu.css'); ?>" />
   <?php include 'cardrenderer/webfont.php'; ?>
   <script src="deck/lz-string.min.js?<?php echo filemtime('deck/lz-string.min.js'); ?>"></script>
   <script src="deck/seedrandom.min.js?<?php echo filemtime('deck/seedrandom.min.js'); ?>"></script>
@@ -208,275 +121,261 @@ $version = "0.6.13-BETA";
   ?>
 </head>
 <body class="no-scroll">
-  <script>
-  // Apply CRT setting immediately to avoid flash of effects
-  (function(){try{var s=localStorage.getItem('chiriboga-settings');if(s){var p=JSON.parse(s);if(p.crtEffects===false)document.body.classList.add('no-crt');}}catch(e){}})();
-  </script>
-  <div class="terminal-frame">
-    <div class="screen">
-      <div class="glow-overlay"></div>
-      <div class="noise"></div>
-      
-      <div class="screen-content">
-        <div class="system-text">
-          CH1R180G4 SYSTEMS v2.71 // NEURAL INTERFACE READY<span class="cursor"></span>
-        </div>
+  <div class="app">
+    <header class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-text">
+        <h1 class="brand-title">Netrunner</h1>
+        <p class="brand-sub">Solo mode</p>
+      </div>
+    </header>
 
-        <div class="game-title">
-          <div class="title-stack">
-            <div class="title-line">
-              <h1>NETRUNNER</h1>
-            </div>
-            <div class="subtitle-container">
-              <span class="bracket left">[</span><h2>$0LØ MOÐ3</h2><span class="bracket right">]</span>
-            </div>
-            <div class="hex-decoration">
-              <div class="hex"></div>
-              <div class="hex"></div>
-              <div class="hex"></div>
-              <div class="hex"></div>
-              <div class="hex"></div>
-            </div>
+    <main class="menu-items">
+      <div class="menu-layout">
+        <section class="match-preview" aria-label="Quick game">
+          <div class="match-head">
+            <span class="eyebrow">Quick game</span>
+            <button class="icon-button shuffle-button" onclick="selectRandomDecks()" aria-label="Shuffle the matchup" title="Shuffle the matchup"></button>
           </div>
-          <div class="spacer-grow"></div>
-          <div class="meta-stack landscape-only">
-            <div class="version">BUILD <?php echo $version; ?> // 2077.<?php echo date('m.d'); ?></div>
-            <div class="status-bar">
-              <span class="status-item" style="cursor:pointer;" onclick="openCredits()">CREDITS</span>
-              <span class="status-item" id="threat-level">THREAT LEVEL: <span id="threat-color">1</span></span>
-              <span class="status-item">IP: <?php echo htmlspecialchars($ip); ?></span>
-            </div>
-          </div>
-        </div>
-
-        <div class="menu-items">
-          <div class="menu-layout">
-            <div class="menu-buttons" id="menu-buttons">
-              <div class="menu-item" onclick="handleMenu('quick', event)">QUICK GAME</div>
-              <div class="menu-item" onclick="handleMenu('custom', event)">CUSTOM GAME</div>
-              <div class="menu-item-container" id="gauntlet-container">
-                <div class="menu-item" id="gauntlet-main" onclick="handleMenu('tournament', event)">GAUNTLET</div>
-                <div class="gauntlet-submenu" id="gauntlet-submenu" style="display:none;">
-                  <div class="menu-item-sub" onclick="handleGauntletNew(event)">NEW</div>
-                  <div class="menu-item-sub disabled" id="gauntlet-continue-btn" onclick="handleGauntletContinue(event)">CONTINUE</div>
-                </div>
-              </div>
-              <div class="menu-item" onclick="handleMenu('tutorial', event)">TUTORIAL</div>
-              <div class="menu-item" onclick="handleMenu('achievements', event)">ACHIEVEMENTS <span class="achievement-percent">[0%]</span></div>
-              <div class="menu-item" onclick="handleMenu('settings', event)">SETTINGS</div>
-            </div>
-            <div class="credits-panel" id="credits-panel" style="display:none;">
-              <div class="credits-header-row">
-                <div class="credits-title">CREDITS</div>
-                <button class="credits-back" onclick="closeCredits()">BACK</button>
-              </div>
-              <div class="credits-scroll">
-                <h3>About Netrunner Solo Mode</h3>
-                <p>This Netrunner Solo Mode extension for the Chiriboga engine is developed by <a href="https://github.com/drbo6" target="_blank" rel="noopener">DrBo6</a>. It adds a more refined interface and game modes to the game. 
-                It is available on <a href="https://github.com/NEU-DrBo6/chiriboga" target="_blank" rel="noopener">Github</a> for bug reports and contributions.</p>                
-                <h3>About Chiriboga</h3>
-                <p><strong>Chiriboga</strong> is a Netrunner engine developed by <a href="https://github.com/bobtheuberfish" target="_blank" rel="noopener">bobtheuberfish</a>. 
-                It implements <em>Android: Netrunner</em> gameplay with an AI opponent. The source is available on <a href="https://github.com/bobtheuberfish/chiriboga" target="_blank" rel="noopener">Github</a>.</p>
-                <p>Special thanks to testers, including: BadEpsilon, bowlsley, D-Smith, eniteris, Kwaice, Mentlegen, olompumpa, R41B, saff, Saintis, Ysengrin.</p>
-                <p class="aside">"...but who ordered him to wear that hat?"</p>
-                <h3>Pre‑constructed Decks</h3>
-                <p>Girometics SG+SU21 and NSG Core precons designed by <a href="https://netrunnerdb.com/en/decklists/find?faction=&sort=popularity&rotation_id=&author=Girometics&title=&is_legal=&mwl_code=&packs%5B%5D=su21&packs%5B%5D=sg" target="_blank">Girometics</a>. All other precons curated by <a href="https://github.com/drbo6" target="_blank" rel="noopener">DrBo6</a>. Click on them to see their creators on NetrunnerDB.com.</p>
-                <h3>Legal & Attribution</h3>
-                <p><em>Netrunner</em> and <em>Android</em> are trademarks of Fantasy Flight Publishing, Inc. and/or Wizards of the Coast LLC. Not affiliated with FFG, WotC, or NSG.</p>
-                <p>Chiriboga includes cards from <a href="https://nullsignal.games" target="_blank">Null Signal's</a> <em>System Gateway</em> and <em>System Update 2021</em>. 
-                Its card art & symbols are property of Null Signal Games and used under <a href="https://creativecommons.org/licenses/by-nd/4.0/" target="_blank" rel="noopener">CC BY-ND 4.0</a>. This is a fan implementation and it is not endorsed by NSG.</p>
-                <p>All trademarks, card imagery, and faction symbols remain property of their respective owners.</p>                                
-                <p>Deck of cards by Daniel Solis from <a href="https://thenounproject.com/icon/deck-of-cards-219525/" target="_blank" title="deck of cards Icons">Noun Project</a> (<a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>)</p>
-                <p>Book by Ralf Schmitzer from <a href="https://thenounproject.com/icon/book-548893/" target="_blank" title="Book Icons">Noun Project</a> (<a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>)</p>
-                <p>Debug by Studio GLD from <a href="https://thenounproject.com/icon/debug-3594500/" target="_blank" title="Debug Icons">Noun Project</a> (<a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>)</p>
-                <p class="tiny-note">Open source spirit: Contributions and feedback welcome.</p>
-              </div>
-            </div>
-
-            <div class="settings-panel" id="settings-panel" style="display:none;">
-              <div class="settings-header-row">
-                <div class="settings-title">SETTINGS</div>
-                <button class="settings-back" onclick="closeSettings()">BACK</button>
-              </div>
-              <div class="settings-content">
-                <div class="settings-section-header">GLOBAL SETTINGS</div>
-                <div class="settings-group" title="AI execution speed in milliseconds">
-                  <label class="settings-label">GAME SPEED</label>
-                  <div style="display:flex;align-items:center;gap:12px;justify-content:flex-start;">
-                    <label style="display:flex;align-items:center;gap:4px;margin:0;">
-                      <input type="checkbox" id="speed-settings-1" onchange="setGameSpeed(1000)">
-                      <span style="width:12px;text-align:center;color:var(--crt-green-muted);">1</span>
-                    </label>
-                    <label style="display:flex;align-items:center;gap:4px;margin:0;">
-                      <input type="checkbox" id="speed-settings-2" checked onchange="setGameSpeed(350)">
-                      <span style="width:12px;text-align:center;color:var(--crt-green-muted);">2</span>
-                    </label>
-                    <label style="display:flex;align-items:center;gap:4px;margin:0;">
-                      <input type="checkbox" id="speed-settings-3" onchange="setGameSpeed(100)">
-                      <span style="width:12px;text-align:center;color:var(--crt-green-muted);">3</span>
-                    </label>
-                  </div>
-                </div>
-                <div class="settings-group" title="Enable debug menu in game">
-                  <label class="settings-label">DEBUG MENU</label>
-                  <div class="settings-switch">
-                    <input type="checkbox" id="debug-menu-settings-toggle" onchange="toggleDebugMenu()">
-                    <label for="debug-menu-settings-toggle" class="switch-label"></label>
-                  </div>
-                </div>
-
-                <div class="settings-group" title="Use high-resolution card art when available">
-                  <label class="settings-label">HI-RES CARD ART</label>
-                  <div class="settings-switch">
-                    <input type="checkbox" id="enable-hires-toggle" onchange="toggleEnableHiRes()">
-                    <label for="enable-hires-toggle" class="switch-label"></label>
-                  </div>
-                </div>
-                <div class="settings-group" title="Toggle CRT visual effects (scanlines, flicker, glow) across all pages">
-                  <label class="settings-label">CRT EFFECTS</label>
-                  <div class="settings-switch">
-                    <input type="checkbox" id="crt-effects-toggle" onchange="toggleCrtEffects()">
-                    <label for="crt-effects-toggle" class="switch-label"></label>
-                  </div>
-                </div>
-                <div class="settings-section-header">CUSTOM GAME SETTINGS</div>
-                <div class="settings-group" title="Card sets loaded in the Custom Game deck builder">
-                  <label class="settings-label" id="custom-sets-label" onclick="handleLoadSetsClick()">LOAD<br />SETS</label>
-                  <div class="settings-checkboxes" id="custom-sets-checkboxes">
-                    <!-- Populated dynamically by JavaScript based on setRegistry -->
-                  </div>
-                </div>
-                <div class="settings-section-header">GAUNTLET SETTINGS</div>
-                <div class="settings-group" title="Number of opponents you must defeat to complete the Gauntlet">
-                  <label class="settings-label">GAUNTLET LENGTH</label>
-                  <div class="settings-stepper">
-                    <button class="stepper-btn" id="gauntlet-length-minus" onclick="adjustGauntletLength(-4)">−</button>
-                    <span class="stepper-value" id="gauntlet-length-value">4</span>
-                    <button class="stepper-btn" id="gauntlet-length-plus" onclick="adjustGauntletLength(4)">+</button>
-                  </div>
-                </div>
-                <div class="settings-group" title="Cycle through all four corp factions before repeating any faction">
-                  <label class="settings-label">ALTERNATE CORPS</label>
-                  <div class="settings-switch">
-                    <input type="checkbox" id="alternate-factions-toggle" onchange="toggleAlternateFactions()">
-                    <label for="alternate-factions-toggle" class="switch-label"></label>
-                  </div>
-                </div>
-                <div class="settings-group" title="Distribute runner cards evenly across all factions in your Gauntlet starting card pool">
-                  <label class="settings-label">BALANCED CARD POOL</label>
-                  <div class="settings-switch">
-                    <input type="checkbox" id="balanced-factions-toggle" onchange="toggleBalancedFactions()">
-                    <label for="balanced-factions-toggle" class="switch-label"></label>
-                  </div>
-                </div>
-                <div class="settings-group" title="Shop packs only contain cards matching their category (e.g. Anarch pack = only Anarch cards). Makes the game easier.">
-                  <label class="settings-label">STRICT PACKS</label>
-                  <div class="settings-switch">
-                    <input type="checkbox" id="strict-packs-toggle" onchange="toggleStrictPacks()">
-                    <label for="strict-packs-toggle" class="switch-label"></label>
-                  </div>
-                </div>
-                <div class="settings-group" title="Card sets loaded for building your runner deck in Gauntlet mode">
-                  <label class="settings-label" id="allowed-sets-label" onclick="handleLoadSetsClick()">LOAD<br />PLAYER SETS</label>
-                  <div class="settings-checkboxes" id="gauntlet-sets-checkboxes">
-                    <!-- Populated dynamically by JavaScript based on setRegistry -->
-                  </div>
-                </div>
-                <div class="settings-section-header" title="Select which corp decks can appear as opponents in Gauntlet mode">GAUNTLET OPPONENTS</div>
-                <div class="precon-list" id="precon-list">
-                  <!-- Populated by JavaScript -->
-                </div>
-                <div class="settings-section-header">DATA MANAGEMENT</div>
-                <div class="settings-group" title="Export all local data including settings and gauntlet saves">
-                  <label class="settings-label">BACKUP DATA</label>
-                  <button class="settings-btn" onclick="exportLocalData()">EXPORT</button>
-                </div>
-                <div class="settings-group" title="Import previously exported data backup">
-                  <label class="settings-label">RESTORE DATA</label>
-                  <button class="settings-btn" onclick="document.getElementById('import-data-input').click()">IMPORT</button>
-                  <input type="file" id="import-data-input" accept=".json" style="display:none;" onchange="importLocalData(event)">
-                </div>
-              </div>
-            </div>
-
-            <div class="achievements-panel" id="achievements-panel" style="display:none;">
-              <div class="achievements-header-row">
-                <div class="achievements-title">ACHIEVEMENTS</div>
-                <button class="achievements-back" onclick="closeAchievements()">BACK</button>
-              </div>
-              <div class="achievements-content">
-                <div class="achievements-section-header">HIGH SCORES</div>
-                <div class="high-scores-list" id="high-scores-list">
-                  <!-- Populated by JavaScript -->
-                </div>
-                <div class="achievements-section-header">ACHIEVEMENTS</div>
-                <div class="achievements-list" id="achievements-list">
-                  <!-- Populated by JavaScript -->
-                </div>
-              </div>
-            </div>
-
-            <!-- Data management modal -->
-            <div class="data-modal" id="data-modal" style="display:none;">
-              <div class="data-modal-content">
-                <div class="data-modal-title" id="data-modal-title">TITLE</div>
-                <div class="data-modal-message" id="data-modal-message">Message goes here</div>
-                <div class="data-modal-buttons" id="data-modal-buttons">
-                  <button class="data-modal-btn" onclick="closeDataModal()">OK</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="tutorial-panel" id="tutorial-panel" style="display:none;">
-              <div class="tutorial-header-row">
-                <div class="tutorial-title">TUTORIAL</div>
-                <button class="tutorial-back" onclick="closeTutorial()">BACK</button>
-              </div>
-              <div id="tutorial-buttons">
-                <div id="tutorial-grid">
-                  <div class="tutorial-item" onclick="startTutorial(0)"><span class="tutorial-number">1</span><span class="tutorial-label">CLICKS & RUNS</span></div>
-                  <div class="tutorial-item" onclick="startTutorial(1)"><span class="tutorial-number">2</span><span class="tutorial-label">CREDITS & CARD TYPES</span></div>
-                  <div class="tutorial-item" onclick="startTutorial(2)"><span class="tutorial-number">3</span><span class="tutorial-label">ICE & ICEBREAKERS</span></div>
-                  <div class="tutorial-item" onclick="startTutorial(3)"><span class="tutorial-number">4</span><span class="tutorial-label">ASSETS & TRASH COSTS</span></div>
-                  <div class="tutorial-item" onclick="startTutorial(4)"><span class="tutorial-number">5</span><span class="tutorial-label">ADVANCING & SCORING</span></div>
-                  <div class="tutorial-item" onclick="startTutorial(5)"><span class="tutorial-number">6</span><span class="tutorial-label">UPGRADES & ROOT</span></div>
-                  <div class="tutorial-item" onclick="window.location.href='engine.php?ap=6&p=r&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&t=1'"><span class="tutorial-number">7</span><span class="tutorial-label">VS CORP STARTER DECK</span></div>
-                  <div class="tutorial-item" onclick="window.location.href='engine.php?ap=6&p=c&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&t=1'"><span class="tutorial-number">8</span><span class="tutorial-label">VS RUNNER STARTER DECK</span></div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="match-preview" onclick="selectRandomDecks()">
-              <div class="preview-title">QUICK GAME<br />INCOMING..</div>
+          <div class="match-portraits" onclick="selectRandomDecks()">
+            <div class="portrait-wrapper">
               <div class="portrait-container" id="player-portrait">
                 <img class="portrait" src="" alt="">
-                <div class="portrait-glow"></div>
-                <div class="portrait-label">YOU</div>
               </div>
-              
-              <div class="vs-text">VS</div>
-              
+              <div class="portrait-label">You</div>
+            </div>
+            <div class="vs-text">vs</div>
+            <div class="portrait-wrapper">
               <div class="portrait-container" id="ai-portrait">
                 <img class="portrait" src="" alt="">
-                <div class="portrait-glow"></div>
-                <div class="portrait-glow"></div>
-                <div class="portrait-label">CPU</div>
               </div>
+              <div class="portrait-label">CPU</div>
             </div>
+          </div>
+          <div class="menu-item menu-item-primary" onclick="handleMenu('quick', event)">Play</div>
+        </section>
 
+        <nav class="menu-buttons" id="menu-buttons">
+          <div class="menu-item" data-icon="custom" onclick="handleMenu('custom', event)">
+            <span class="mi-title">Custom game</span><span class="mi-sub">Choose your deck and opponent</span>
+          </div>
+          <div class="menu-item-container" id="gauntlet-container">
+            <div class="menu-item" data-icon="gauntlet" id="gauntlet-main" onclick="handleMenu('tournament', event)">
+              <span class="mi-title">Gauntlet</span><span class="mi-sub">Take on a run of corps, upgrade as you go</span>
+            </div>
+            <div class="gauntlet-submenu" id="gauntlet-submenu" style="display:none;">
+              <div class="menu-item-sub" onclick="handleGauntletNew(event)">New gauntlet</div>
+              <div class="menu-item-sub disabled" id="gauntlet-continue-btn" onclick="handleGauntletContinue(event)">Continue</div>
+            </div>
+          </div>
+          <div class="menu-item" data-icon="tutorial" onclick="handleMenu('tutorial', event)">
+            <span class="mi-title">Tutorial</span><span class="mi-sub">Learn to play in eight short lessons</span>
+          </div>
+          <div class="menu-item" data-icon="achievements" onclick="handleMenu('achievements', event)">
+            <span class="mi-title">Achievements</span><span class="mi-sub"><span class="achievement-percent">0%</span> unlocked</span>
+          </div>
+          <div class="menu-item" data-icon="settings" onclick="handleMenu('settings', event)">
+            <span class="mi-title">Settings</span><span class="mi-sub">Speed, sound, card sets and data</span>
+          </div>
+        </nav>
+
+        <div class="menu-panel credits-panel" id="credits-panel" style="display:none;">
+          <div class="panel-header credits-header-row">
+            <button class="panel-back credits-back" onclick="closeCredits()" aria-label="Back"></button>
+            <div class="panel-title credits-title">Credits</div>
+          </div>
+          <div class="panel-body credits-scroll">
+            <h3>About Netrunner Solo Mode</h3>
+            <p>This Netrunner Solo Mode extension for the Chiriboga engine is developed by <a href="https://github.com/drbo6" target="_blank" rel="noopener">DrBo6</a>. It adds a more refined interface and game modes to the game.
+            It is available on <a href="https://github.com/NEU-DrBo6/chiriboga" target="_blank" rel="noopener">Github</a> for bug reports and contributions.</p>
+            <h3>About Chiriboga</h3>
+            <p><strong>Chiriboga</strong> is a Netrunner engine developed by <a href="https://github.com/bobtheuberfish" target="_blank" rel="noopener">bobtheuberfish</a>.
+            It implements <em>Android: Netrunner</em> gameplay with an AI opponent. The source is available on <a href="https://github.com/bobtheuberfish/chiriboga" target="_blank" rel="noopener">Github</a>.</p>
+            <p>Special thanks to testers, including: BadEpsilon, bowlsley, D-Smith, eniteris, Kwaice, Mentlegen, olompumpa, R41B, saff, Saintis, Ysengrin.</p>
+            <p class="aside">"...but who ordered him to wear that hat?"</p>
+            <h3>Pre‑constructed Decks</h3>
+            <p>Girometics SG+SU21 and NSG Core precons designed by <a href="https://netrunnerdb.com/en/decklists/find?faction=&sort=popularity&rotation_id=&author=Girometics&title=&is_legal=&mwl_code=&packs%5B%5D=su21&packs%5B%5D=sg" target="_blank">Girometics</a>. All other precons curated by <a href="https://github.com/drbo6" target="_blank" rel="noopener">DrBo6</a>. Click on them to see their creators on NetrunnerDB.com.</p>
+            <h3>Legal & Attribution</h3>
+            <p><em>Netrunner</em> and <em>Android</em> are trademarks of Fantasy Flight Publishing, Inc. and/or Wizards of the Coast LLC. Not affiliated with FFG, WotC, or NSG.</p>
+            <p>Chiriboga includes cards from <a href="https://nullsignal.games" target="_blank">Null Signal's</a> <em>System Gateway</em> and <em>System Update 2021</em>.
+            Its card art & symbols are property of Null Signal Games and used under <a href="https://creativecommons.org/licenses/by-nd/4.0/" target="_blank" rel="noopener">CC BY-ND 4.0</a>. This is a fan implementation and it is not endorsed by NSG.</p>
+            <p>All trademarks, card imagery, and faction symbols remain property of their respective owners.</p>
+            <p>Inter typeface by Rasmus Andersson (<a href="https://rsms.me/inter/" target="_blank" rel="noopener">SIL Open Font License</a>).</p>
+            <p class="tiny-note">Open source spirit: Contributions and feedback welcome.</p>
           </div>
         </div>
 
-        <div class="meta-stack portrait-only">
-          <div class="version">BUILD <?php echo $version; ?> // 2077.<?php echo date('m.d'); ?></div>
-          <div class="status-bar">
-            <span class="status-item" style="cursor:pointer;" onclick="openCredits()">CREDITS</span>
-            <span class="status-item" id="threat-level-portrait">THREAT LEVEL: <span id="threat-color-portrait">1</span></span>
-            <span class="status-item">IP: <?php echo htmlspecialchars($ip); ?></span>
+        <div class="menu-panel settings-panel" id="settings-panel" style="display:none;">
+          <div class="panel-header settings-header-row">
+            <button class="panel-back settings-back" onclick="closeSettings()" aria-label="Back"></button>
+            <div class="panel-title settings-title">Settings</div>
+          </div>
+          <div class="panel-body settings-content">
+            <div class="settings-section-header">General</div>
+            <div class="settings-card">
+              <div class="settings-group" title="How fast the AI plays">
+                <label class="settings-label">Game speed<span class="settings-hint">How fast the AI plays</span></label>
+                <div class="segmented">
+                  <label><input type="checkbox" id="speed-settings-1" onchange="setGameSpeed(1000)"><span>Slow</span></label>
+                  <label><input type="checkbox" id="speed-settings-2" checked onchange="setGameSpeed(350)"><span>Normal</span></label>
+                  <label><input type="checkbox" id="speed-settings-3" onchange="setGameSpeed(100)"><span>Fast</span></label>
+                </div>
+              </div>
+              <div class="settings-group">
+                <label class="settings-label" for="sound-toggle">Sound effects</label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="sound-toggle" onchange="Feedback.setSound(this.checked)">
+                  <label for="sound-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group">
+                <label class="settings-label" for="haptics-toggle">Vibration</label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="haptics-toggle" onchange="Feedback.setHaptics(this.checked)">
+                  <label for="haptics-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group" title="Use high-resolution card art when available">
+                <label class="settings-label" for="enable-hires-toggle">High-resolution card art</label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="enable-hires-toggle" onchange="toggleEnableHiRes()">
+                  <label for="enable-hires-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group" title="Enable debug menu in game">
+                <label class="settings-label" for="debug-menu-settings-toggle">Debug menu</label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="debug-menu-settings-toggle" onchange="toggleDebugMenu()">
+                  <label for="debug-menu-settings-toggle" class="switch-label"></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-header">Custom game</div>
+            <div class="settings-card">
+              <div class="settings-group settings-group-stacked" title="Card sets loaded in the Custom Game deck builder">
+                <label class="settings-label" id="custom-sets-label" onclick="handleLoadSetsClick()">Card sets</label>
+                <div class="settings-checkboxes" id="custom-sets-checkboxes">
+                  <!-- Populated dynamically by JavaScript based on setRegistry -->
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-header">Gauntlet</div>
+            <div class="settings-card">
+              <div class="settings-group" title="Number of opponents you must defeat to complete the Gauntlet">
+                <label class="settings-label">Length<span class="settings-hint">Opponents to beat</span></label>
+                <div class="settings-stepper">
+                  <button class="stepper-btn" id="gauntlet-length-minus" onclick="adjustGauntletLength(-4)" aria-label="Fewer">−</button>
+                  <span class="stepper-value" id="gauntlet-length-value">4</span>
+                  <button class="stepper-btn" id="gauntlet-length-plus" onclick="adjustGauntletLength(4)" aria-label="More">+</button>
+                </div>
+              </div>
+              <div class="settings-group" title="Cycle through all four corp factions before repeating any faction">
+                <label class="settings-label" for="alternate-factions-toggle">Alternate corps<span class="settings-hint">Face every faction before any repeats</span></label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="alternate-factions-toggle" onchange="toggleAlternateFactions()">
+                  <label for="alternate-factions-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group" title="Distribute runner cards evenly across all factions in your Gauntlet starting card pool">
+                <label class="settings-label" for="balanced-factions-toggle">Balanced card pool<span class="settings-hint">Spread starting cards across factions</span></label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="balanced-factions-toggle" onchange="toggleBalancedFactions()">
+                  <label for="balanced-factions-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group" title="Shop packs only contain cards matching their category (e.g. Anarch pack = only Anarch cards). Makes the game easier.">
+                <label class="settings-label" for="strict-packs-toggle">Strict packs<span class="settings-hint">Packs only hold their own faction (easier)</span></label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="strict-packs-toggle" onchange="toggleStrictPacks()">
+                  <label for="strict-packs-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group settings-group-stacked" title="Card sets loaded for building your runner deck in Gauntlet mode">
+                <label class="settings-label" id="allowed-sets-label" onclick="handleLoadSetsClick()">Player card sets</label>
+                <div class="settings-checkboxes" id="gauntlet-sets-checkboxes">
+                  <!-- Populated dynamically by JavaScript based on setRegistry -->
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-header" title="Select which corp decks can appear as opponents in Gauntlet mode">Gauntlet opponents</div>
+            <div class="settings-card">
+              <div class="precon-list" id="precon-list">
+                <!-- Populated by JavaScript -->
+              </div>
+            </div>
+
+            <div class="settings-section-header">Data</div>
+            <div class="settings-card">
+              <div class="settings-group" title="Export all local data including settings and gauntlet saves">
+                <label class="settings-label">Back up<span class="settings-hint">Settings and gauntlet saves</span></label>
+                <button class="settings-btn" onclick="exportLocalData()">Export</button>
+              </div>
+              <div class="settings-group" title="Import previously exported data backup">
+                <label class="settings-label">Restore</label>
+                <button class="settings-btn" onclick="document.getElementById('import-data-input').click()">Import</button>
+                <input type="file" id="import-data-input" accept=".json" style="display:none;" onchange="importLocalData(event)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-panel achievements-panel" id="achievements-panel" style="display:none;">
+          <div class="panel-header achievements-header-row">
+            <button class="panel-back achievements-back" onclick="closeAchievements()" aria-label="Back"></button>
+            <div class="panel-title achievements-title">Achievements</div>
+          </div>
+          <div class="panel-body achievements-content">
+            <div class="settings-section-header achievements-section-header">High scores</div>
+            <div class="high-scores-list" id="high-scores-list">
+              <!-- Populated by JavaScript -->
+            </div>
+            <div class="settings-section-header achievements-section-header">Achievements</div>
+            <div class="achievements-list" id="achievements-list">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Data management modal -->
+        <div class="data-modal" id="data-modal" style="display:none;">
+          <div class="data-modal-content">
+            <div class="data-modal-title" id="data-modal-title">TITLE</div>
+            <div class="data-modal-message" id="data-modal-message">Message goes here</div>
+            <div class="data-modal-buttons" id="data-modal-buttons">
+              <button class="data-modal-btn" onclick="closeDataModal()">OK</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-panel tutorial-panel" id="tutorial-panel" style="display:none;">
+          <div class="panel-header tutorial-header-row">
+            <button class="panel-back tutorial-back" onclick="closeTutorial()" aria-label="Back"></button>
+            <div class="panel-title tutorial-title">Tutorial</div>
+          </div>
+          <div class="panel-body" id="tutorial-buttons">
+            <div id="tutorial-grid">
+              <div class="tutorial-item" onclick="startTutorial(0)"><span class="tutorial-number">1</span><span class="tutorial-label">Clicks and runs</span></div>
+              <div class="tutorial-item" onclick="startTutorial(1)"><span class="tutorial-number">2</span><span class="tutorial-label">Credits and card types</span></div>
+              <div class="tutorial-item" onclick="startTutorial(2)"><span class="tutorial-number">3</span><span class="tutorial-label">Ice and icebreakers</span></div>
+              <div class="tutorial-item" onclick="startTutorial(3)"><span class="tutorial-number">4</span><span class="tutorial-label">Assets and trash costs</span></div>
+              <div class="tutorial-item" onclick="startTutorial(4)"><span class="tutorial-number">5</span><span class="tutorial-label">Advancing and scoring</span></div>
+              <div class="tutorial-item" onclick="startTutorial(5)"><span class="tutorial-number">6</span><span class="tutorial-label">Upgrades and root</span></div>
+              <div class="tutorial-item" onclick="window.location.href='engine.php?ap=6&p=r&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&t=1'"><span class="tutorial-number">7</span><span class="tutorial-label">Play the corp starter deck</span></div>
+              <div class="tutorial-item" onclick="window.location.href='engine.php?ap=6&p=c&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&t=1'"><span class="tutorial-number">8</span><span class="tutorial-label">Play the runner starter deck</span></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
+
+    <footer class="meta-stack">
+      <span class="version">v<?php echo $version; ?></span>
+      <span class="meta-dot" aria-hidden="true">·</span>
+      <a class="status-item" href="#" onclick="openCredits(); return false;">Credits</a>
+    </footer>
   </div>
 
   <script>
@@ -496,8 +395,7 @@ $version = "0.6.13-BETA";
       strictPacks: null,
       allowedSets: null,
       customSets: null,  // Sets loaded in Custom Game / decklauncher
-      preconOverrides: {},  // Maps precon name to boolean override for useForGauntlet
-      crtEffects: true  // CRT visual effects enabled by default
+      preconOverrides: {}  // Maps precon name to boolean override for useForGauntlet
     };
     
     // ========================================
@@ -676,7 +574,7 @@ $version = "0.6.13-BETA";
       var percent = getAchievementPercentage();
       var displays = document.querySelectorAll('.achievement-percent');
       for (var i = 0; i < displays.length; i++) {
-        displays[i].textContent = '[' + percent + '%]';
+        displays[i].textContent = percent + '%';
       }
     }
     
@@ -918,10 +816,6 @@ $version = "0.6.13-BETA";
         ? saved.enableHiRes
         : (typeof gauntletConfig !== 'undefined' && typeof gauntletConfig.enableHiRes === 'boolean' ? gauntletConfig.enableHiRes : false);
 
-      // Load CRT effects preference (default true = enabled)
-      settingsOverrides.crtEffects = (saved && typeof saved.crtEffects === 'boolean')
-        ? saved.crtEffects
-        : true;
       
       // Update UI to match
       document.getElementById('gauntlet-length-value').textContent = settingsOverrides.gauntletLength;
@@ -956,9 +850,11 @@ $version = "0.6.13-BETA";
       document.getElementById('debug-menu-settings-toggle').checked = settingsOverrides.debugMenuEnabled;
       // Set hi-res toggle
       document.getElementById('enable-hires-toggle').checked = settingsOverrides.enableHiRes;
-      // Set CRT effects toggle
-      document.getElementById('crt-effects-toggle').checked = settingsOverrides.crtEffects;
-      applyCrtEffects();
+      // Sound and vibration live in mobile/feedback.js
+      if (window.Feedback) {
+        document.getElementById('sound-toggle').checked = Feedback.sound;
+        document.getElementById('haptics-toggle').checked = Feedback.haptics;
+      }
       
       // Update stepper button states
       updateStepperButtons();
@@ -981,7 +877,6 @@ $version = "0.6.13-BETA";
           gameSpeed: settingsOverrides.gameSpeed,
           debugMenuEnabled: settingsOverrides.debugMenuEnabled,
           enableHiRes: settingsOverrides.enableHiRes,
-          crtEffects: settingsOverrides.crtEffects,
           hiddenSetsRevealed: hiddenSetsRevealed,
         };
         localStorage.setItem('chiriboga-settings', JSON.stringify(toSave));
@@ -1044,20 +939,6 @@ $version = "0.6.13-BETA";
       saveSettings();
     }
 
-    function toggleCrtEffects() {
-      settingsOverrides.crtEffects = document.getElementById('crt-effects-toggle').checked;
-      applyCrtEffects();
-      saveSettings();
-    }
-
-    function applyCrtEffects() {
-      if (settingsOverrides.crtEffects) {
-        document.body.classList.remove('no-crt');
-      } else {
-        document.body.classList.add('no-crt');
-      }
-    }
-    
     function toggleAllowedSet(setCode) {
       var checkbox = document.getElementById('set-' + setCode);
       var idx = settingsOverrides.allowedSets.indexOf(setCode);
@@ -1162,7 +1043,6 @@ $version = "0.6.13-BETA";
       // Add description for factioned precons
       var factionedDesc = document.createElement('div');
       factionedDesc.className = 'precon-section-desc';
-      factionedDesc.style.cssText = 'padding: 4px 8px 8px 8px; font-size: 10px; color: #00ff00aa; line-height: 1.4;';
       factionedDesc.textContent = 'The default Corp decks have been tested and should not lead to unexpected potentially game-breaking bugs.';
       listContainer.appendChild(factionedDesc);
       
@@ -1174,14 +1054,13 @@ $version = "0.6.13-BETA";
       // Add neutral section if there are neutral decks
       if (neutralPrecons.length > 0) {
         var neutralHeader = document.createElement('div');
-        neutralHeader.className = 'settings-section-header';
+        neutralHeader.className = 'precon-subheader';
         neutralHeader.title = 'Neutral corp decks that can replace the final gauntlet opponent when Alternate Factions is ON';
-        neutralHeader.textContent = 'NEUTRAL GAUNTLET OPPONENTS';
+        neutralHeader.textContent = 'Neutral opponents';
         listContainer.appendChild(neutralHeader);
         
         var neutralDesc = document.createElement('div');
         neutralDesc.className = 'precon-section-desc';
-        neutralDesc.style.cssText = 'padding: 4px 8px 8px 8px; font-size: 10px; color: #00ff00aa; line-height: 1.4;';
         neutralDesc.textContent = 'When Alternate Factions is ON, enabled neutral decks can replace the final gauntlet opponent.';
         listContainer.appendChild(neutralDesc);
         
@@ -1227,24 +1106,30 @@ $version = "0.6.13-BETA";
       updatePortraits();
     }
     
-    // Function to update portraits
+    // Function to update portraits: deal the two identities onto the table
     function updatePortraits() {
       if (playerDeck && aiDeck) {
-        var playerIdentity = cardSet[playerDeck.identity];
-        var aiIdentity = cardSet[aiDeck.identity];
-        
-        // Update player portrait
-        var playerImg = document.querySelector('#player-portrait .portrait');
-        if (playerIdentity) {
-          playerImg.src = 'images/' + playerIdentity.imageFile.replace('.png', '.jpg');
+        setPortrait('player-portrait', cardSet[playerDeck.identity]);
+        setPortrait('ai-portrait', cardSet[aiDeck.identity]);
+        var shuffle = document.querySelector('.shuffle-button');
+        if (shuffle) {
+          shuffle.classList.remove('spin');
+          void shuffle.offsetWidth;
+          shuffle.classList.add('spin');
         }
-        
-        // Update AI portrait
-        var aiImg = document.querySelector('#ai-portrait .portrait');
-        if (aiIdentity) {
-          aiImg.src = 'images/' + aiIdentity.imageFile.replace('.png', '.jpg');
-        }
+        if (window.Feedback) Feedback.play('deal');
       }
+    }
+    function setPortrait(id, identity) {
+      var container = document.getElementById(id);
+      if (!container || !identity) return;
+      var img = container.querySelector('.portrait');
+      img.classList.remove('loaded');
+      img.onload = function () { img.classList.add('loaded'); };
+      img.src = 'images/' + identity.imageFile.replace('.png', '.jpg');
+      container.classList.remove('dealt');
+      void container.offsetWidth;
+      container.classList.add('dealt');
     }
     
     // Function to launch gauntlet mode
@@ -1730,11 +1615,6 @@ $version = "0.6.13-BETA";
       initializeAchievements();
       updateAchievementDisplay();
 
-      // Lock menu layout dimensions so panel swaps do not shift the UI
-      lockMenuLayoutDimensions();
-
-      // Track resolution bucket changes and auto-refresh if we cross breakpoints
-      initResolutionAutoRefresh();
     });
     
     function handleMenu(option, evt) {
@@ -1786,36 +1666,11 @@ $version = "0.6.13-BETA";
         return;
       }
       
-      // Show "COMING SOON" for non-implemented features
-      if (option !== 'quick' && option !== 'custom') {
-        item.innerHTML = 'COMING SOON';
-        setTimeout(() => {
-          const labels = {
-            quick: 'QUICK GAME',
-            custom: 'CUSTOM GAME',
-            tournament: 'GAUNTLET',
-            tutorial: 'TUTORIAL',
-            achievements: 'ACHIEVEMENTS <span class="achievement-percent">[0%]</span>',
-            settings: 'SETTINGS'
-          };
-          item.innerHTML = labels[option];
-        }, 1500);
-        return;
-      }
-      
-      item.innerHTML = 'LOADING...';
-      
+      // Anything else isn't implemented
+      if (option !== 'quick' && option !== 'custom') return;
+
+      if (item) item.classList.add('is-loading');
       setTimeout(() => {
-        const labels = {
-          quick: 'QUICK GAME',
-          custom: 'CUSTOM GAME',
-          tournament: 'GAUNTLET',
-          tutorial: 'TUTORIAL',
-          achievements: 'ACHIEVEMENTS <span class="achievement-percent">[0%]</span>',
-          settings: 'SETTINGS'
-        };
-        item.innerHTML = labels[option];
-        
         // Navigate based on option
         if (option === 'custom' && playerDeck && aiDeck) {
           // Build compressed deck strings from precon format
@@ -1885,176 +1740,62 @@ $version = "0.6.13-BETA";
                                  '&' + playerSide + '=' + playerCompressed +
                                  '&showdeck=1';
         }
-      }, 500);
+      }, 150);
     }
 
-    // Random glitch for CHIRIBOGA
-    const chiriboga = document.querySelector('.game-title h2');
-    
-    function triggerGlitch() {
-      chiriboga.classList.add('glitch');
-      
-      setTimeout(() => {
-        chiriboga.classList.remove('glitch');
-      }, 300);
-      
-      // Schedule next glitch at random interval (1-6 seconds)
-      const nextDelay = 1000 + Math.random() * 5000;
-      setTimeout(triggerGlitch, nextDelay);
+    // Menu panels (credits, settings, achievements, tutorial) open as
+    // full-screen sheets over the menu and slide away when closed.
+    function openMenuPanel(id) {
+      var panel = document.getElementById(id);
+      if (panel.style.display === 'flex' && !panel.classList.contains('closing')) {
+        closeMenuPanel(id);
+        return false;
+      }
+      panel.classList.remove('closing');
+      panel.style.display = 'flex';
+      var body = panel.querySelector('.panel-body');
+      if (body) body.scrollTop = 0;
+      return true;
     }
-    
-    // Start the random glitch cycle after initial delay
-    setTimeout(triggerGlitch, 2000);
-
-    // Threat level indicator: start GREEN and hold >= 60s, then cycle every 1-10 min
-    var threatLevels = [
-      { name: '1', color: '#33ff33' },
-      { name: '2', color: '#ffff33' },
-      { name: '3', color: '#ff9933' },
-      { name: '4', color: '#ff3333' }
-    ];
-    function setThreat(threat){
-      var el1 = document.getElementById('threat-color');
-      var el2 = document.getElementById('threat-color-portrait');
-      if (el1) { el1.textContent = threat.name; el1.style.color = threat.color; el1.style.textShadow = '0 0 5px ' + threat.color; }
-      if (el2) { el2.textContent = threat.name; el2.style.color = threat.color; el2.style.textShadow = '0 0 5px ' + threat.color; }
+    function closeMenuPanel(id) {
+      var panel = document.getElementById(id);
+      if (panel.style.display === 'none') return;
+      panel.classList.add('closing');
+      var done = function () {
+        panel.removeEventListener('animationend', done);
+        if (!panel.classList.contains('closing')) return;
+        panel.classList.remove('closing');
+        panel.style.display = 'none';
+      };
+      panel.addEventListener('animationend', done);
+      setTimeout(done, 400); // in case animations are off
     }
-    function scheduleNextThreatChange(minSec, maxSec){
-      var delay = (minSec + Math.random() * (maxSec - minSec)) * 1000;
-      setTimeout(function(){
-        // pick a random threat (could be same as current; spec allows)
-        var idx = Math.floor(Math.random() * threatLevels.length);
-        setThreat(threatLevels[idx]);
-        // subsequent cycles: 60-600s
-        scheduleNextThreatChange(60, 600);
-      }, delay);
-    }
-    // initialize GREEN and hold for at least 60 seconds, then cycle 1-10 minutes
-    setThreat(threatLevels[0]);
-    scheduleNextThreatChange(60, 600);
-
-    // Keep the menu layout dimensions fixed to avoid layout shifts when toggling panels
-    function lockMenuLayoutDimensions(){
-      var layout = document.querySelector('.menu-layout');
-      if (!layout) return;
-      var rect = layout.getBoundingClientRect();
-      layout.style.width = rect.width + 'px';
-      layout.style.height = rect.height + 'px';
-    }
-
-    // Auto-refresh when switching between major responsive breakpoints
-    var resolutionBucket = null;
-    var reloadScheduled = false;
-    function getResolutionBucket(){
-      var w = window.innerWidth;
-      var h = window.innerHeight;
-      if (h <= 768) return 'short-height';
-      if (h >= 769 && w <= 678) return 'narrow-width';
-      return 'standard';
-    }
-    function initResolutionAutoRefresh(){
-      resolutionBucket = getResolutionBucket();
-      window.addEventListener('resize', function(){
-        var next = getResolutionBucket();
-        if (next !== resolutionBucket && !reloadScheduled){
-          reloadScheduled = true;
-          setTimeout(function(){ location.reload(); }, 200);
-        }
+    // The system back gesture closes an open panel instead of leaving the app.
+    window.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      ['tutorial-panel', 'achievements-panel', 'settings-panel', 'credits-panel'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && el.style.display === 'flex') closeMenuPanel(id);
       });
-    }
+    });
+    // Coming back to the menu with the browser's back/forward cache.
+    window.addEventListener('pageshow', function () {
+      document.querySelectorAll('.menu-item.is-loading').forEach(function (el) { el.classList.remove('is-loading'); });
+    });
 
-    // Credits toggle
-    function openCredits(){
-      var menu = document.getElementById('menu-buttons');
-      var panel = document.getElementById('credits-panel');
-      // If already open, act like back button
-      if (menu.style.display === 'none' && panel.style.display === 'flex') {
-        closeCredits();
-        return;
-      }
-      // Capture current width of menu buttons before hiding
-      var rect = menu.getBoundingClientRect();
-      var w = rect.width;
-      var h = rect.height; // match visual height
-      menu.style.display='none';
-      panel.style.width = w + 'px';
-      panel.style.maxHeight = h + 'px';
-      panel.style.display='flex';
-    }
-    function closeCredits(){
-      document.getElementById('credits-panel').style.display='none';
-      document.getElementById('menu-buttons').style.display='flex';
-      // Clear explicit width so menu layout can adapt on resize
-      var p = document.getElementById('credits-panel');
-      p.style.width='';
-      p.style.maxHeight='';
-    }
-
-    // Settings toggle
-    function openSettings(){
-      var menu = document.getElementById('menu-buttons');
-      var panel = document.getElementById('settings-panel');
-      // If already open, act like back button
-      if (menu.style.display === 'none' && panel.style.display === 'flex') {
-        closeSettings();
-        return;
-      }
-      // Capture current width of menu buttons before hiding
-      var rect = menu.getBoundingClientRect();
-      var w = rect.width;
-      var h = rect.height;
-      menu.style.display='none';
-      panel.style.width = w + 'px';
-      panel.style.maxHeight = h + 'px';
-      panel.style.display='flex';
-    }
-    function closeSettings(){
-      document.getElementById('settings-panel').style.display='none';
-      document.getElementById('menu-buttons').style.display='flex';
-      // Clear explicit width so menu layout can adapt on resize
-      var p = document.getElementById('settings-panel');
-      p.style.width='';
-      p.style.maxHeight='';
-    }
-
-    // Achievements panel toggle
+    function openCredits(){ openMenuPanel('credits-panel'); }
+    function closeCredits(){ closeMenuPanel('credits-panel'); }
+    function openSettings(){ openMenuPanel('settings-panel'); }
+    function closeSettings(){ closeMenuPanel('settings-panel'); }
     function openAchievements(){
-      var menu = document.getElementById('menu-buttons');
-      var panel = document.getElementById('achievements-panel');
-      // If already open, act like back button
-      if (menu.style.display === 'none' && panel.style.display === 'flex') {
-        closeAchievements();
-        return;
-      }
-      // Capture current width of menu buttons before hiding
-      var rect = menu.getBoundingClientRect();
-      var w = rect.width;
-      var h = rect.height;
-      menu.style.display='none';
-      panel.style.width = w + 'px';
-      panel.style.maxHeight = h + 'px';
-      panel.style.display='flex';
-      // Populate the achievements panel
-      populateAchievementsPanel();
+      if (openMenuPanel('achievements-panel')) populateAchievementsPanel();
     }
-    
-    function closeAchievements(){
-      document.getElementById('achievements-panel').style.display='none';
-      document.getElementById('menu-buttons').style.display='flex';
-      // Clear explicit width so menu layout can adapt on resize
-      var p = document.getElementById('achievements-panel');
-      p.style.width='';
-      p.style.maxHeight='';
-    }
-    
-    // Format timestamp to yy|mm|dd format
+    function closeAchievements(){ closeMenuPanel('achievements-panel'); }
+
+    // Format a timestamp as a short local date
     function formatAchievementDate(timestamp) {
       if (!timestamp) return '';
-      var date = new Date(timestamp);
-      var yy = String(date.getFullYear()).slice(-2);
-      var mm = String(date.getMonth() + 1).padStart(2, '0');
-      var dd = String(date.getDate()).padStart(2, '0');
-      return yy + '|' + mm + '|' + dd;
+      return new Date(timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
     }
     
     // Get card image path from identity ID
@@ -2142,10 +1883,19 @@ $version = "0.6.13-BETA";
         row.title = achievement.description;
         
         // Achievement name
+        var textEl = document.createElement('div');
+        textEl.className = 'achievement-text';
         var nameEl = document.createElement('div');
         nameEl.className = 'achievement-name';
         nameEl.textContent = achievement.name;
-        row.appendChild(nameEl);
+        textEl.appendChild(nameEl);
+        if (achievement.description) {
+          var descEl = document.createElement('div');
+          descEl.className = 'achievement-desc';
+          descEl.textContent = achievement.description;
+          textEl.appendChild(descEl);
+        }
+        row.appendChild(textEl);
         
         // Achievement date (only if achieved)
         var dateEl = document.createElement('div');
@@ -2325,54 +2075,9 @@ $version = "0.6.13-BETA";
     var screenContentWidth = null;
     var screenContentHeight = null;
 
-    function openTutorial(){
-      var menu = document.getElementById('menu-buttons');
-      var panel = document.getElementById('tutorial-panel');
-      var screenContent = document.querySelector('.screen-content');
-      
-      // Lock screen-content dimensions
-      var rect = screenContent.getBoundingClientRect();
-      screenContentWidth = rect.width;
-      screenContentHeight = rect.height;
-      screenContent.style.width = screenContentWidth + 'px';
-      screenContent.style.height = screenContentHeight + 'px';
-      
-      // If already open, act like back button
-      if (menu.style.display === 'none' && panel.style.display === 'flex') {
-        closeTutorial();
-        return;
-      }
-      
-      // Capture current width/height of menu buttons before hiding (for short resolutions)
-      var rect = menu.getBoundingClientRect();
-      var w = rect.width;
-      var h = rect.height;
-      menu.style.display='none';
-      panel.style.width = w + 'px';
-      panel.style.height = h + 'px';
-      panel.style.maxHeight = h + 'px';
-      panel.style.minWidth = w + 'px';
-      panel.style.minHeight = h + 'px';
-      panel.style.display='flex';
-    }
-    
-    function closeTutorial(){
-      var screenContent = document.querySelector('.screen-content');
-      document.getElementById('tutorial-panel').style.display='none';
-      document.getElementById('menu-buttons').style.display='flex';
-      // Clear explicit width/height so menu layout can adapt on resize
-      var p = document.getElementById('tutorial-panel');
-      p.style.width='';
-      p.style.height='';
-      p.style.minWidth='';
-      p.style.minHeight='';
-      p.style.maxHeight='';
-      screenContent.style.width='';
-      screenContent.style.height='';
-      screenContentWidth = null;
-      screenContentHeight = null;
-    }
-    
+    function openTutorial(){ openMenuPanel('tutorial-panel'); }
+    function closeTutorial(){ closeMenuPanel('tutorial-panel'); }
+
     // Gauntlet submenu toggle
     function showGauntletSubmenu() {
       var mainBtn = document.getElementById('gauntlet-main');
@@ -2389,7 +2094,7 @@ $version = "0.6.13-BETA";
       var mainBtn = document.getElementById('gauntlet-main');
       var submenu = document.getElementById('gauntlet-submenu');
       if (mainBtn && submenu) {
-        mainBtn.style.display = 'block';
+        mainBtn.style.display = '';
         submenu.style.display = 'none';
       }
     }

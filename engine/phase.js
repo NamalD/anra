@@ -1679,7 +1679,7 @@ phases.runEnds.Resolve.n = function () {
     encounteredIce = null;
     movement = false;
     UnbreakAll(null); //for visual history we've left subroutines broken until now. let's reset them all
-    // Remove run-active class from body to restore green CRT theme
+    // The run is over: back to the normal accent
     document.body.classList.remove('run-active');
     // Clear watermark after run ends (successful or not)
     var watermark = document.querySelector('.netrunner-bg-watermark');

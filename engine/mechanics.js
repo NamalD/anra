@@ -21,12 +21,12 @@ function MakeRun(server) {
       ChangePhase(phases.runApproachIce);
     }
     else ChangePhase(phases.runDecideContinue); //(Nisei 2021 1.4.2 sends to 4; 4.1 doesn't apply so go directly to 4.2)
-    // Add run-active class to body for red CRT theme
+    // Run state: the interface switches to the danger accent
     document.body.classList.add('run-active');
-    // Change watermark to alert message
+    PlayFeedback("run");
     var watermark = document.querySelector('.netrunner-bg-watermark');
     if (watermark) {
-      watermark.textContent = 'ALERT! RUN ACTIVE!';
+      watermark.textContent = 'Run';
     }
     Render(); //to update server glow
   }, "Run Begins"); //DRBO6 - enable Knickknack by adding a trigger
@@ -1029,6 +1029,7 @@ function Damage(damageType, num, canBePrevented, afterTrashing, context) {
   var applyDamage = function() {
 	//opportunity for prevention has passed, intended.damage will now be done
     Log("Runner takes " + intended.damage + " " + intended.damageType + " damage");
+    if (intended.damage > 0) PlayFeedback("damage");
 	if (intended.damageType == "core") {
 		runner.coreDamage++;
 	}
@@ -1642,6 +1643,7 @@ function Score(card, afterScore, context) {
     if (intended.score == null) return;
     MoveCard(intended.score, corp.scoreArea);
     intended.score.faceUp = true;
+    PlayFeedback(viewingPlayer == corp ? "score" : "damage");
     if (runner.AI != null) runner.AI.LoseInfoAboutHQCards(intended.score);
 	var historyBreak = {
       title: currentPhase.title,
@@ -1684,6 +1686,7 @@ function Steal() {
   OpportunityForAvoidPrevent(corp, "responsePreventableSteal", [], function () {
     ResolveAccess();
     if (intended.steal == null) return;
+    PlayFeedback(viewingPlayer == runner ? "score" : "damage");
 	var stolenFromString = "remote";
 	if (attackedServer == corp.HQ.cards) stolenFromString = "HQ";
 	else if (attackedServer == corp.RnD.cards) stolenFromString = "R&D";
