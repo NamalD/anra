@@ -1,5 +1,6 @@
 // Shows a card image beside the mouse pointer while hovering a card in a deck list:
-// the gauntlet's .deck-card-entry rows and the deck builder's "Current deck" textarea.
+// the gauntlet's .deck-card-entry rows, the in-game deck info's .deck-info-card links and
+// the deck builder's "Current deck" textarea.
 // Mouse only; touch keeps tap-to-open-lightbox.
 (function () {
   var GAP = 16;
@@ -20,7 +21,9 @@
     if (typeof cardSet === "undefined" || !cardSet[cardId]) return Hide();
     var img = Preview();
     if (cardId !== shownId) {
-      img.src = GetImagePath(cardSet[cardId].imageFile);
+      var file = cardSet[cardId].imageFile;
+      // The game page has no GetImagePath (hi-res setting); it uses the standard images.
+      img.src = typeof GetImagePath === "function" ? GetImagePath(file) : "images/" + ChangeImageFileToJPG(file);
       shownId = cardId;
     }
     img.classList.add("visible");
@@ -80,7 +83,7 @@
   function IsMouse(e) {
     return e.originalEvent.pointerType === "mouse";
   }
-  $(document).on("pointermove", ".deck-card-entry[data-card-id]", function (e) {
+  $(document).on("pointermove", ".deck-card-entry[data-card-id], .deck-info-card[data-card-id]", function (e) {
     if (IsMouse(e)) Show(parseInt($(this).attr("data-card-id")), e.clientX, e.clientY);
   });
   $(document).on("pointermove", "textarea#deck", function (e) {
@@ -88,7 +91,7 @@
     var id = CardIdFromLine(LineAt(this, e.clientY));
     if (id > -1) Show(id, e.clientX, e.clientY); else Hide();
   });
-  $(document).on("pointerleave", ".deck-card-entry, textarea#deck", Hide);
+  $(document).on("pointerleave", ".deck-card-entry, .deck-info-card, textarea#deck", Hide);
   $(document).on("pointerdown keydown", Hide);
   window.addEventListener("scroll", Hide, true);
 })();

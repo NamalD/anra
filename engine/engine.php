@@ -94,7 +94,7 @@
 		</script>
 		<?php
 		// Load remaining JS files
-		$remainingFiles = array('decks', 'runcalculator', 'ai_corp', 'ai_runner');
+		$remainingFiles = array('decks', 'runcalculator', 'ai_corp', 'ai_runner', 'cardpreview');
 		foreach ($remainingFiles as $jsfile) {
 			$thisfilemtime = filemtime($jsfile.'.js');
 			echo '<script src="'.$jsfile.'.js?' . $thisfilemtime . '"></script>';

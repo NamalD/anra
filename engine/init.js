@@ -407,7 +407,7 @@ function ShowDeckInfo() {
           html += "<div class='deck-info-group'><div class='deck-info-type'><span>" + type + "</span><span>" + typeTotal + "</span></div>";
           grouped[type].sort(function(a, b) { return a.title.localeCompare(b.title); });
           for (var c = 0; c < grouped[type].length; c++) {
-            html += "<a class='deck-info-card' href='https://netrunnerdb.com/en/card/" + grouped[type][c].id + "' target='_blank'><span class='deck-info-count'>" + grouped[type][c].count + "×</span>" + grouped[type][c].title + "</a>";
+            html += "<a class='deck-info-card' data-card-id='" + grouped[type][c].id + "' href='https://netrunnerdb.com/en/card/" + grouped[type][c].id + "' target='_blank'><span class='deck-info-count'>" + grouped[type][c].count + "×</span>" + grouped[type][c].title + "</a>";
           }
           html += "</div>";
         }
