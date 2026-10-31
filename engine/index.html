@@ -1,19 +1,22 @@
-<?php
-$version = "0.6.13-BETA";
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Netrunner: Solo Mode</title>
-  <link href="images/favicon.ico" rel="icon">
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?<?php echo filemtime('style.css'); ?>" />
-  <link rel="stylesheet" href="menu.css?<?php echo filemtime('menu.css'); ?>" />
-  <?php include 'cardrenderer/webfont.php'; ?>
-  <script src="deck/lz-string.min.js?<?php echo filemtime('deck/lz-string.min.js'); ?>"></script>
-  <script src="deck/seedrandom.min.js?<?php echo filemtime('deck/seedrandom.min.js'); ?>"></script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="menu.css" />
+  <style>
+    @font-face {
+      font-family: PlayBoldNisei;
+      src: url("cardrenderer/Play-Bold-Nisei.ttf");
+      font-weight: bold;
+    }
+  </style>
+  <script src="cardrenderer/webfont.js"></script>
+  <script>WebFont.load({ custom: { families: ["PlayBoldNisei"] } });</script>
+  <script src="deck/lz-string.min.js"></script>
+  <script src="deck/seedrandom.min.js"></script>
   <script>
     // iOS viewport fix: reset zoom when app returns from background
     document.addEventListener('visibilitychange', function() {
@@ -54,23 +57,9 @@ $version = "0.6.13-BETA";
       }
     })();
   </script>
-  <?php
-  echo '<script src="utility.js?' . filemtime('utility.js') . '"></script>';
-  echo '<script src="config.js?' . filemtime('config.js') . '"></script>';
-
-  // =================================================================
-  // CARD SETS - Dynamically loaded from setRegistry in config.js
-  // =================================================================
-  
-  // Output filetimes for all set files (for proper cache busting in JS)
-  $setFiles = glob('sets/*.js');
-  $setFiletimes = array();
-  foreach ($setFiles as $setFile) {
-    $setName = basename($setFile, '.js');
-    $setFiletimes[$setName] = filemtime($setFile);
-  }
-  echo '<script>var setFiletimes = ' . json_encode($setFiletimes) . ';</script>';
-  ?>
+  <script src="utility.js"></script>
+  <script src="config.js"></script>
+  <script>var setFiletimes = __SET_VERSIONS__;</script>
   <script>
   // Dynamically load all sets from setRegistry (defined in config.js)
   (function() {
@@ -97,28 +86,7 @@ $version = "0.6.13-BETA";
     }
   })();
   </script>
-  <?php
-  // Load preconstructed decks
-  $preconDir = 'precons';
-  if (is_dir($preconDir)) {
-    $preconFiles = glob($preconDir . '/*.js');
-    foreach ($preconFiles as $preconFile) {
-      echo '<script src="' . $preconFile . '?' . filemtime($preconFile) . '"></script>';
-    }
-  }
-  // Determine user IP (respect X-Forwarded-For if present)
-  $ip = '';
-  if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    $parts = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-    $ip = trim($parts[0]);
-    // Validate IP format to prevent header injection
-    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-      $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-    }
-  } else {
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-  }
-  ?>
+  <!-- build:precons -->
 </head>
 <body class="no-scroll">
   <div class="app">
@@ -363,8 +331,8 @@ $version = "0.6.13-BETA";
               <div class="tutorial-item" onclick="startTutorial(3)"><span class="tutorial-number">4</span><span class="tutorial-label">Assets and trash costs</span></div>
               <div class="tutorial-item" onclick="startTutorial(4)"><span class="tutorial-number">5</span><span class="tutorial-label">Advancing and scoring</span></div>
               <div class="tutorial-item" onclick="startTutorial(5)"><span class="tutorial-number">6</span><span class="tutorial-label">Upgrades and root</span></div>
-              <div class="tutorial-item" onclick="window.location.href='engine.php?ap=6&p=r&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&t=1'"><span class="tutorial-number">7</span><span class="tutorial-label">Play the corp starter deck</span></div>
-              <div class="tutorial-item" onclick="window.location.href='engine.php?ap=6&p=c&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&t=1'"><span class="tutorial-number">8</span><span class="tutorial-label">Play the runner starter deck</span></div>
+              <div class="tutorial-item" onclick="window.location.href='engine.html?ap=6&p=r&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&t=1'"><span class="tutorial-number">7</span><span class="tutorial-label">Play the corp starter deck</span></div>
+              <div class="tutorial-item" onclick="window.location.href='engine.html?ap=6&p=c&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&t=1'"><span class="tutorial-number">8</span><span class="tutorial-label">Play the runner starter deck</span></div>
             </div>
           </div>
         </div>
@@ -372,7 +340,7 @@ $version = "0.6.13-BETA";
     </main>
 
     <footer class="meta-stack">
-      <span class="version">v<?php echo $version; ?></span>
+      <span class="version">v0.6.13-BETA</span>
       <span class="meta-dot" aria-hidden="true">·</span>
       <a class="status-item" href="#" onclick="openCredits(); return false;">Credits</a>
     </footer>
@@ -1579,7 +1547,7 @@ $version = "0.6.13-BETA";
       var encodedC = LZString.compressToEncodedURIComponent(JSON.stringify(corpOpponentDeck));
       
       // Navigate to gauntlet
-      window.location.href = 'gauntlet.php?r=' + encodedR + '&c=' + encodedC + '&g=' + encodedG;
+      window.location.href = 'gauntlet.html?r=' + encodedR + '&c=' + encodedC + '&g=' + encodedG;
     }
     
 
@@ -1702,7 +1670,7 @@ $version = "0.6.13-BETA";
           var playerSide = (cardSet[playerDeck.identity].player === runner) ? 'r' : 'c';
           var aiSide = (cardSet[aiDeck.identity].player === runner) ? 'r' : 'c';
           
-          window.location.href = 'decklauncher.php?p=' + playerSide + 
+          window.location.href = 'decklauncher.html?p=' + playerSide + 
                                  '&' + aiSide + '=' + aiCompressed + 
                                  '&' + playerSide + '=' + playerCompressed;
         } else if (option === 'quick' && playerDeck && aiDeck) {
@@ -1735,7 +1703,7 @@ $version = "0.6.13-BETA";
           var playerSide = (cardSet[playerDeck.identity].player === runner) ? 'r' : 'c';
           var aiSide = (cardSet[aiDeck.identity].player === runner) ? 'r' : 'c';
           
-          window.location.href = 'engine.php?p=' + playerSide + 
+          window.location.href = 'engine.html?p=' + playerSide + 
                                  '&' + aiSide + '=' + aiCompressed + 
                                  '&' + playerSide + '=' + playerCompressed +
                                  '&showdeck=1';
@@ -2140,8 +2108,8 @@ $version = "0.6.13-BETA";
         var savedJson = localStorage.getItem('chiriboga-gauntlet-save');
         var saveData = JSON.parse(savedJson);
         
-        // Navigate to gauntlet.php with saved parameters
-        var gauntletUrl = 'gauntlet.php?r=' + saveData.r + '&g=' + saveData.g;
+        // Navigate to gauntlet.html with saved parameters
+        var gauntletUrl = 'gauntlet.html?r=' + saveData.r + '&g=' + saveData.g;
         window.location.href = gauntletUrl;
       } catch (e) {
         console.error("Error loading gauntlet save:", e);
@@ -2224,7 +2192,7 @@ $version = "0.6.13-BETA";
       ];
       var t = tutorials[mentorIndex];
       if (!t) return;
-      window.location.href = 'engine.php?p=' + t.side + '&mentor=' + t.mentor + '&t=1';
+      window.location.href = 'engine.html?p=' + t.side + '&mentor=' + t.mentor + '&t=1';
     }
   </script>
 </body>

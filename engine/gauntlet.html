@@ -4,18 +4,22 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>Netrunner: Solo Mode</title>
-		<link href="images/favicon.ico" rel="icon">
-		<?php echo '<link rel="stylesheet" href="jquery/jquery-ui.css?' . filemtime('jquery/jquery-ui.css') . '" />'; ?>
-		<?php echo '<link rel="stylesheet" href="style.css?' . filemtime('style.css') . '" />'; ?><?php echo '<link rel="stylesheet" href="decks.css?' . filemtime('decks.css') . '" />'; ?>
-		<link rel="manifest" href="manifest.json">
-		<?php
-		include 'cardrenderer/webfont.php';
-		echo '<script src="jquery/jquery-3.2.1.min.js?' . filemtime('jquery/jquery-3.2.1.min.js') . '"></script>';
-		echo '<script src="jquery/jquery-ui.min.js?' . filemtime('jquery/jquery-ui.min.js') . '"></script>';
-		echo '<script src="jquery/textarea-helper.js?' . filemtime('jquery/textarea-helper.js') . '"></script>';
-		echo '<script src="deck/lz-string.min.js?' . filemtime('deck/lz-string.min.js') . '"></script>';
-		echo '<script src="deck/seedrandom.min.js?' . filemtime('deck/seedrandom.min.js') . '"></script>';
-		?>
+		<link rel="stylesheet" href="jquery/jquery-ui.css" />
+		<link rel="stylesheet" href="style.css" /><link rel="stylesheet" href="decks.css" />
+		<style>
+		  @font-face {
+		    font-family: PlayBoldNisei;
+		    src: url("cardrenderer/Play-Bold-Nisei.ttf");
+		    font-weight: bold;
+		  }
+		</style>
+		<script src="cardrenderer/webfont.js"></script>
+		<script>WebFont.load({ custom: { families: ["PlayBoldNisei"] } });</script>
+		<script src="jquery/jquery-3.2.1.min.js"></script>
+		<script src="jquery/jquery-ui.min.js"></script>
+		<script src="jquery/textarea-helper.js"></script>
+		<script src="deck/lz-string.min.js"></script>
+		<script src="deck/seedrandom.min.js"></script>
 		<script>
 			//create some variables so we can load the card definitions
 			var runner = {};
@@ -154,19 +158,10 @@
 			});
 		})();
 		</script>
-		<?php
-		echo '<script src="utility.js?' . filemtime('utility.js') . '"></script>';
-		echo '<script src="cardpreview.js?' . filemtime('cardpreview.js') . '"></script>';
-			echo '<script src="config.js?' . filemtime('config.js') . '"></script>';
-		// =================================================================
-		// GAUNTLET SETS - Base set only, additional sets loaded via JS
-		// User settings from localStorage determine which sets are loaded
-		// =================================================================
-		// Base set always loaded (System Gateway)
-		$baseSet = "systemgateway";
-		echo '<script src="sets/'.$baseSet.'.js?' . filemtime('sets/'.$baseSet.'.js') . '"></script>';
-		
-		?>
+		<script src="utility.js"></script>
+		<script src="cardpreview.js"></script>
+		<script src="config.js"></script>
+		<script src="sets/systemgateway.js"></script>
 		<script>
 		// Flag to track when additional sets are loaded
 		window._gauntletSetsReady = false;
@@ -585,7 +580,7 @@
 				}
 				
 				// Build launch address
-				var launchAddress = "engine.php?p=r&c=" + oppCompressed + "&r=" + playerCompressed;
+				var launchAddress = "engine.html?p=r&c=" + oppCompressed + "&r=" + playerCompressed;
 				if (updatedGauntletParam !== "") {
 					launchAddress += "&g=" + updatedGauntletParam;
 				}
@@ -1395,7 +1390,7 @@
 				var perkId = opp.startingPerk || 0;
 				var perkDisabled = opp.perkDisabled === true;
 				
-				// Perk names and descriptions (must match engine.php)
+				// Perk names and descriptions (must match engine.html)
 				// Perks 7+ are disabled versions of perks 1-6
 				var basePerk = perkId > 6 ? perkId - 6 : perkId;
 				
@@ -1995,16 +1990,7 @@
 				VerifyCardPool();
 			}
 		</script>
-		<?php
-		// Load preconstructed decks
-		$preconDir = 'precons';
-		if (is_dir($preconDir)) {
-			$preconFiles = glob($preconDir . '/*.js');
-			foreach ($preconFiles as $preconFile) {
-				echo '<script src="' . $preconFile . '?' . filemtime($preconFile) . '"></script>';
-			}
-		}
-		?>
+		<!-- build:precons -->
 		<script>
 			// Map faction names to unicode icons for displaying in identity dropdown
 			function GetFactionIcon(faction) {
@@ -2089,7 +2075,7 @@
 			}
 
 			// Load card data from JSON
-			$.getJSON('carddata/carddata.json?<?php echo filemtime('carddata/carddata.json'); ?>', function(data) {
+			$.getJSON('carddata/carddata.json', function(data) {
 				cardData = data;
 				// Build quick lookup by code for import
 				try {
@@ -2428,7 +2414,7 @@
 				}
 			}
 			
-			// Display deck output and opponent info (matching decklauncher.php pattern)
+			// Display deck output and opponent info (matching decklauncher.html pattern)
 			RecalculateDeckCounts();
 			
 			// Display deck stats (only if identity is from a loaded set)
@@ -3867,7 +3853,7 @@
 				}
 			  }
 			  
-			  var launchAddress = "engine.php?p=" + dC + "&" + opponentdeckstr + dC + "=" + compressed;
+			  var launchAddress = "engine.html?p=" + dC + "&" + opponentdeckstr + dC + "=" + compressed;
 			  // Add gauntlet parameter if present
 			  if (updatedGauntletParam !== "") {
 				launchAddress += "&g=" + updatedGauntletParam;
@@ -3885,14 +3871,14 @@
 			  var opponentAddress;
 			  if (existingOpponentCompressed) {
 				// We are transitioning: new active side oC gets opponent deck; old active side becomes opponent
-				opponentAddress = "decklauncher.php?p=" + oC + "&" + oC + "=" + existingOpponentCompressed + "&" + dC + "=" + compressed;
+				opponentAddress = "decklauncher.html?p=" + oC + "&" + oC + "=" + existingOpponentCompressed + "&" + dC + "=" + compressed;
 			  } else {
 				// No opponent deck yet: keep previous behavior (random opponent) while passing current deck as opposite param
-				opponentAddress = "decklauncher.php?p=" + oC + "&" + oC + "=random&" + dC + "=" + compressed;
+				opponentAddress = "decklauncher.html?p=" + oC + "&" + oC + "=random&" + dC + "=" + compressed;
 			  }
 			  $("#launch").prop("href", launchAddress);
 			  $("#opponent").prop("href", opponentAddress);
-			  var historyUrl = "gauntlet.php?" + opponentdeckstr + dC + "=" + compressed;
+			  var historyUrl = "gauntlet.html?" + opponentdeckstr + dC + "=" + compressed;
 			  if (updatedGauntletParam !== "") {
 				historyUrl += "&g=" + updatedGauntletParam;
 			  }
@@ -4170,7 +4156,7 @@
 			  }
 			  console.log('Rebuilt playerIdentities with ' + playerIdentities.length + ' identities after sets loaded');
 			  
-			  // Log decoded parameters (r, c, g) - same as decks.js in engine.php
+			  // Log decoded parameters (r, c, g) - same as decks.js in engine.html
 			  var decodedR = URIParameter("r");
 			  var decodedC = URIParameter("c");
 			  var decodedG = URIParameter("g");
@@ -4800,7 +4786,7 @@
 		<div id="contentcontainer">
 			<div id="dataentry">
 				<header class="page-bar">
-					<button id="exittomenu" onclick="window.location.href='index.php';" class="button" type="button">Menu</button>
+					<button id="exittomenu" onclick="window.location.href='index.html';" class="button" type="button">Menu</button>
 					<h1 class="page-title">Gauntlet</h1>
 				</header>
 				<div class="leftrow toprow identity-panel">

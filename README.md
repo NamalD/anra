@@ -45,10 +45,16 @@ hand to play it.
   `engine.php` and the deck info and gauntlet summary dialogs in `init.js` and `utility.js`.
   The CRT effects setting is gone; sound and vibration settings replace it.
 
+- **Plain HTML pages.** Upstream's `index.php`, `engine.php`, `decklauncher.php` and `gauntlet.php`
+  are `engine/*.html` here. PHP only produced cache-busting query strings, script lists and the
+  set and precon file lists; the build fills those in (`<!-- build:precons -->`,
+  `__SET_VERSIONS__`, `__VERSION_REFERENCE__`), and the pages no longer carry Google Analytics,
+  the server's favicon or the IP address display.
+
 The build (`scripts/build.mjs`) turns it into a static site in `dist/`:
 
-- renders the PHP pages to plain HTML once at build time (PHP was only used for cache-busting and includes)
-- removes Google Analytics and the IP address display
+- copies the engine, lists the precon decks, versions every script, stylesheet and the card
+  database with a content hash so updates are never served stale
 - adds `mobile/`: a PWA manifest and icons, a service worker for offline play and placeholder
   art (text cards, card backs, counter chips), high-DPI board rendering, keeping the screen
   awake during a game, suppression of long-press menus, the card reader, the card-art
@@ -56,11 +62,12 @@ The build (`scripts/build.mjs`) turns it into a static site in `dist/`:
   moments (runs, damage, agendas, winning and losing), each switchable in Settings
 
 To update the engine, replace `engine/` with a newer upstream checkout, re-apply these changes
-(`git log -p -- engine/` shows them) and rebuild. Engine files use CRLF line endings; keep them.
+(`git log -p -- engine/` shows them; for the pages, port upstream's PHP page changes into the
+`.html` files) and rebuild. Engine files use CRLF line endings; keep them.
 
 ## Build and deploy
 
-Requires Node 18+ and the PHP CLI.
+Requires Node 18+.
 
 ```sh
 npm run build   # writes dist/
