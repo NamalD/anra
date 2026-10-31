@@ -70,9 +70,15 @@ To update the engine, replace `engine/` with a newer upstream checkout, re-apply
 Requires Node 18+.
 
 ```sh
-npm run build   # writes dist/
-npm run serve   # http://localhost:8080
+npm run build        # writes dist/
+npm run serve        # http://localhost:8080
+npm run screenshots  # screenshots/ of every screen at Pixel 8 size (needs `npm install` and `npx playwright install firefox`)
 ```
+
+`scripts/screenshots.mjs` drives the built app through its screens (menu and panels, deck
+builder, gauntlet and its shop, a fixed runner-vs-corp game) in portrait and landscape and
+writes `screenshots/*.png` plus `screenshots/console.txt`; it is the quickest way to check a
+visual change. `--only menu,board-turn` limits it to named scenes.
 
 Installed copies update themselves: when the app is opened (or brought back to the
 foreground) it checks for a new version, installs it in the background and reloads onto it,
