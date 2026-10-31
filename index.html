@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Netrunner: Solo Mode</title>
+  <link rel="stylesheet" href="style.css?v=da4cc041" />
+  <link rel="stylesheet" href="menu.css?v=0502a60b" />
+  <style>
+    @font-face {
+      font-family: PlayBoldNisei;
+      src: url("cardrenderer/Play-Bold-Nisei.ttf");
+      font-weight: bold;
+    }
+  </style>
+  <script src="cardrenderer/webfont.js?v=81016ac6"></script>
+  <script>WebFont.load({ custom: { families: ["PlayBoldNisei"] } });</script>
+  <script src="deck/lz-string.min.js?v=9d1a0ef0"></script>
+  <script src="deck/seedrandom.min.js?v=48f8d634"></script>
+  <script>
+    // iOS viewport fix: reset zoom when app returns from background
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        // Page is visible again - reset viewport zoom on iOS
+        var viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+        }
+        // Force layout recalculation
+        document.body.style.zoom = 1;
+        window.scrollTo(0, 0);
+      }
+    });
+    
+    var cardSet = []; // prepare to receive card definitions
+    var setIdentifiers = []; // set identifiers
+    var runner = {};
+    var corp = {};
+    var preconDecks = [];
+    function registerPrecon(deck) {
+      preconDecks.push(deck);
+    }
+
+    // Early shim so menu clicks before scripts load won't throw ReferenceError
+    (function(){
+      if (typeof window.handleMenu === 'undefined') {
+        window._queuedMenuClicks = [];
+        window.handleMenu = function(option, evt) {
+          // queue option; evt may not be available later
+          window._queuedMenuClicks.push(option);
+        };
+        window._flushQueuedMenuClicks = function() {
+          if (!window._queuedMenuClicks || !window.handleMenuImpl) return;
+          var q = window._queuedMenuClicks.slice(); window._queuedMenuClicks = [];
+          q.forEach(function(opt){ try { window.handleMenuImpl(opt); } catch(e){} });
+        };
+      }
+    })();
+  </script>
+  <script src="utility.js?v=7d1cb5e2"></script>
+  <script src="config.js?v=61a94268"></script>
+  <script>var setFiletimes = {"automatainitiative":"78bb7db4","cheat":"83bffb6d","coreset":"447c5c13","downfall":"7b965294","elevation":"dfd9f9c2","gauntlet":"0f2cc939","midnightsun":"ca0037b3","parhelion":"98da7928","rebellion":"5fbfe379","systemgateway":"22d2fc10","systemupdate2021":"01087413","tutorial":"b844c7d9","uprising":"86223e60"};</script>
+  <script>
+  // Dynamically load all sets from setRegistry (defined in config.js)
+  (function() {
+    var setsToLoad = [];
+    
+    // Get all sets from setRegistry.availableSets
+    if (typeof setRegistry !== 'undefined' && setRegistry.availableSets) {
+      for (var setKey in setRegistry.availableSets) {
+        setsToLoad.push(setRegistry.availableSets[setKey].file);
+      }
+    } else {
+      // Fallback if setRegistry not available
+      console.error('setRegistry not found in config.js, using fallback sets');
+      setsToLoad = ['systemgateway', 'systemupdate2021'];
+    }
+    
+    // Document.write script tags with proper cache busting from PHP filetimes
+    for (var i = 0; i < setsToLoad.length; i++) {
+      var setName = setsToLoad[i];
+      var timestamp = (typeof setFiletimes !== 'undefined' && setFiletimes[setName]) 
+        ? setFiletimes[setName] 
+        : Date.now();
+      document.write('<script src="sets/' + setName + '.js?' + timestamp + '"><\/script>');
+    }
+  })();
+  </script>
+  <script src="precons/1000 Cuts.js?v=ff4e800c"></script>
+  <script src="precons/2013 Worlds Game 3.js?v=be60823b"></script>
+  <script src="precons/Advancement Factory.js?v=b1c4def3"></script>
+  <script src="precons/Agency.js?v=6913b7dc"></script>
+  <script src="precons/Bio Builder.js?v=8f64f47e"></script>
+  <script src="precons/Bowel Movements.js?v=0180c72a"></script>
+  <script src="precons/Brick Stack.js?v=abb0f5ac"></script>
+  <script src="precons/Brutal Efficiency.js?v=5db23e39"></script>
+  <script src="precons/Building a Punitive World.js?v=b11cd844"></script>
+  <script src="precons/Built to Occasionally Rush.js?v=d82023e2"></script>
+  <script src="precons/Burning Evolution.js?v=771998a6"></script>
+  <script src="precons/Cooking Rene.js?v=a48a1e64"></script>
+  <script src="precons/Customs Duties.js?v=6a5b43e0"></script>
+  <script src="precons/Dashing Mad.js?v=ea340fec"></script>
+  <script src="precons/Decoding You.js?v=ff29c996"></script>
+  <script src="precons/Duel BTL vs Kit.js?v=303c0efe"></script>
+  <script src="precons/Duel Kit vs BTL.js?v=0fa5a554"></script>
+  <script src="precons/Duel NEH vs Zahya.js?v=e9bfaf7b"></script>
+  <script src="precons/Duel PD vs Steve.js?v=98571b7f"></script>
+  <script src="precons/Duel PD vs Tao.js?v=8c5a32b3"></script>
+  <script src="precons/Duel Steve vs PE.js?v=131a1961"></script>
+  <script src="precons/Duel Tao vs PD.js?v=c5bedfa7"></script>
+  <script src="precons/Duel Zahya vs NEH.js?v=a95d90ab"></script>
+  <script src="precons/Economy and Icebreakers.js?v=d9947dac"></script>
+  <script src="precons/Economy, Chaos and FIxed Suit.js?v=9f243002"></script>
+  <script src="precons/Ending Humanity.js?v=b8b02934"></script>
+  <script src="precons/Enthusiasm.js?v=802fa75a"></script>
+  <script src="precons/Fashion Lab.js?v=c9f0b638"></script>
+  <script src="precons/Fast Advance Hub.js?v=0040c5ac"></script>
+  <script src="precons/Fight or Flight.js?v=09f868c8"></script>
+  <script src="precons/Gateway Corp.js?v=c2c080e0"></script>
+  <script src="precons/Gateway Runner.js?v=833aaf35"></script>
+  <script src="precons/Glyph of Warding.js?v=3f64bc1b"></script>
+  <script src="precons/Green Power Blue Money Orange Tricks.js?v=b129d4bc"></script>
+  <script src="precons/Hams Elevation Corps.js?v=a9fc19b9"></script>
+  <script src="precons/Headlock Reina.js?v=720820f5"></script>
+  <script src="precons/High Stakes.js?v=837e5412"></script>
+  <script src="precons/King of Recursion.js?v=ace3619f"></script>
+  <script src="precons/Lucrative Assets.js?v=38cb7a42"></script>
+  <script src="precons/My First Corp.js?v=0f9112cf"></script>
+  <script src="precons/My First Runner.js?v=a922f6f8"></script>
+  <script src="precons/No Walls.js?v=39948363"></script>
+  <script src="precons/Open Gateway.js?v=adab881a"></script>
+  <script src="precons/Pecularity.js?v=abaa6bfe"></script>
+  <script src="precons/Pork Chops.js?v=b0f3b942"></script>
+  <script src="precons/Precision Aim.js?v=2ca2d080"></script>
+  <script src="precons/Prick Thyself.js?v=56c2774d"></script>
+  <script src="precons/ProCo Ayla.js?v=82c69d77"></script>
+  <script src="precons/Professional Opportunities.js?v=57d50113"></script>
+  <script src="precons/Quick Returns.js?v=68880ac5"></script>
+  <script src="precons/R&Devour.js?v=28aa3027"></script>
+  <script src="precons/Run, bypass, breach, trash, $$$$!.js?v=5dd4e544"></script>
+  <script src="precons/Rushed Launch.js?v=6b8f21c4"></script>
+  <script src="precons/SG-SU21 Boss.js?v=576da81d"></script>
+  <script src="precons/Sabbatical.js?v=47caba62"></script>
+  <script src="precons/Server Restructuring.js?v=835e468e"></script>
+  <script src="precons/Shootin n Lootin.js?v=e5e64ce4"></script>
+  <script src="precons/Spike or Strike.js?v=b38b605d"></script>
+  <script src="precons/Spirit Breaker.js?v=dcf7ca06"></script>
+  <script src="precons/Stealing from HQ.js?v=b0cbfe8d"></script>
+  <script src="precons/Tag Business.js?v=830bee25"></script>
+  <script src="precons/Taxing Reality.js?v=0095b3a0"></script>
+  <script src="precons/The Long Con.js?v=146cc275"></script>
+  <script src="precons/The Magic Hat.js?v=19947bce"></script>
+  <script src="precons/The Well-Paced Speedrunner.js?v=561f0562"></script>
+  <script src="precons/Thorny Grid.js?v=2f45ca45"></script>
+  <script src="precons/Tickets Please.js?v=1fcf8f6c"></script>
+  <script src="precons/Tranquil Swap.js?v=d69fedd6"></script>
+  <script src="precons/Trash King.js?v=7053469b"></script>
+  <script src="precons/Tricks, Economy and Icebreakers.js?v=981cc4c4"></script>
+  <script src="precons/Wintermute.js?v=c1c0d1f2"></script>
+<meta name="theme-color" content="#0b0c0f">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="mobile/icons/icon-192.png?v=658c59da">
+<link rel="stylesheet" href="mobile/mobile.css?v=0f83b1e5">
+<script src="mobile/feedback.js?v=cb1da4ee"></script>
+<script src="mobile/mobile.js?v=32343ddb"></script>
+<script src="mobile/reader.js?v=f2adb524"></script>
+</head>
+<body class="no-scroll">
+  <div class="app">
+    <header class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-text">
+        <h1 class="brand-title">Netrunner</h1>
+        <p class="brand-sub">Solo mode</p>
+      </div>
+    </header>
+
+    <main class="menu-items">
+      <div class="menu-layout">
+        <section class="match-preview" aria-label="Quick game">
+          <div class="match-head">
+            <span class="eyebrow">Quick game</span>
+            <button class="icon-button shuffle-button" onclick="selectRandomDecks()" aria-label="Shuffle the matchup" title="Shuffle the matchup"></button>
+          </div>
+          <div class="match-portraits" onclick="selectRandomDecks()">
+            <div class="portrait-wrapper">
+              <div class="portrait-container" id="player-portrait">
+                <img class="portrait" src="" alt="">
+              </div>
+              <div class="portrait-label">You</div>
+            </div>
+            <div class="vs-text">vs</div>
+            <div class="portrait-wrapper">
+              <div class="portrait-container" id="ai-portrait">
+                <img class="portrait" src="" alt="">
+              </div>
+              <div class="portrait-label">CPU</div>
+            </div>
+          </div>
+          <div class="menu-item menu-item-primary" onclick="handleMenu('quick', event)">Play</div>
+        </section>
+
+        <nav class="menu-buttons" id="menu-buttons">
+          <div class="menu-item" data-icon="custom" onclick="handleMenu('custom', event)">
+            <span class="mi-title">Custom game</span><span class="mi-sub">Choose your deck and opponent</span>
+          </div>
+          <div class="menu-item-container" id="gauntlet-container">
+            <div class="menu-item" data-icon="gauntlet" id="gauntlet-main" onclick="handleMenu('tournament', event)">
+              <span class="mi-title">Gauntlet</span><span class="mi-sub">Take on a run of corps, upgrade as you go</span>
+            </div>
+            <div class="gauntlet-submenu" id="gauntlet-submenu" style="display:none;">
+              <div class="menu-item-sub" onclick="handleGauntletNew(event)">New gauntlet</div>
+              <div class="menu-item-sub disabled" id="gauntlet-continue-btn" onclick="handleGauntletContinue(event)">Continue</div>
+            </div>
+          </div>
+          <div class="menu-item" data-icon="tutorial" onclick="handleMenu('tutorial', event)">
+            <span class="mi-title">Tutorial</span><span class="mi-sub">Learn to play in eight short lessons</span>
+          </div>
+          <div class="menu-item" data-icon="achievements" onclick="handleMenu('achievements', event)">
+            <span class="mi-title">Achievements</span><span class="mi-sub"><span class="achievement-percent">0%</span> unlocked</span>
+          </div>
+          <div class="menu-item" data-icon="settings" onclick="handleMenu('settings', event)">
+            <span class="mi-title">Settings</span><span class="mi-sub">Speed, sound, card sets and data</span>
+          </div>
+        </nav>
+
+        <div class="menu-panel credits-panel" id="credits-panel" style="display:none;">
+          <div class="panel-header credits-header-row">
+            <button class="panel-back credits-back" onclick="closeCredits()" aria-label="Back"></button>
+            <div class="panel-title credits-title">Credits</div>
+          </div>
+          <div class="panel-body credits-scroll">
+            <h3>About Netrunner Solo Mode</h3>
+            <p>This Netrunner Solo Mode extension for the Chiriboga engine is developed by <a href="https://github.com/drbo6" target="_blank" rel="noopener">DrBo6</a>. It adds a more refined interface and game modes to the game.
+            It is available on <a href="https://github.com/NEU-DrBo6/chiriboga" target="_blank" rel="noopener">Github</a> for bug reports and contributions.</p>
+            <h3>About Chiriboga</h3>
+            <p><strong>Chiriboga</strong> is a Netrunner engine developed by <a href="https://github.com/bobtheuberfish" target="_blank" rel="noopener">bobtheuberfish</a>.
+            It implements <em>Android: Netrunner</em> gameplay with an AI opponent. The source is available on <a href="https://github.com/bobtheuberfish/chiriboga" target="_blank" rel="noopener">Github</a>.</p>
+            <p>Special thanks to testers, including: BadEpsilon, bowlsley, D-Smith, eniteris, Kwaice, Mentlegen, olompumpa, R41B, saff, Saintis, Ysengrin.</p>
+            <p class="aside">"...but who ordered him to wear that hat?"</p>
+            <h3>Pre‑constructed Decks</h3>
+            <p>Girometics SG+SU21 and NSG Core precons designed by <a href="https://netrunnerdb.com/en/decklists/find?faction=&sort=popularity&rotation_id=&author=Girometics&title=&is_legal=&mwl_code=&packs%5B%5D=su21&packs%5B%5D=sg" target="_blank">Girometics</a>. All other precons curated by <a href="https://github.com/drbo6" target="_blank" rel="noopener">DrBo6</a>. Click on them to see their creators on NetrunnerDB.com.</p>
+            <h3>Legal & Attribution</h3>
+            <p><em>Netrunner</em> and <em>Android</em> are trademarks of Fantasy Flight Publishing, Inc. and/or Wizards of the Coast LLC. Not affiliated with FFG, WotC, or NSG.</p>
+            <p>Chiriboga includes cards from <a href="https://nullsignal.games" target="_blank">Null Signal's</a> <em>System Gateway</em> and <em>System Update 2021</em>.
+            Its card art & symbols are property of Null Signal Games and used under <a href="https://creativecommons.org/licenses/by-nd/4.0/" target="_blank" rel="noopener">CC BY-ND 4.0</a>. This is a fan implementation and it is not endorsed by NSG.</p>
+            <p>All trademarks, card imagery, and faction symbols remain property of their respective owners.</p>
+            <p>Inter typeface by Rasmus Andersson (<a href="https://rsms.me/inter/" target="_blank" rel="noopener">SIL Open Font License</a>).</p>
+            <p class="tiny-note">Open source spirit: Contributions and feedback welcome.</p>
+          </div>
+        </div>
+
+        <div class="menu-panel settings-panel" id="settings-panel" style="display:none;">
+          <div class="panel-header settings-header-row">
+            <button class="panel-back settings-back" onclick="closeSettings()" aria-label="Back"></button>
+            <div class="panel-title settings-title">Settings</div>
+          </div>
+          <div class="panel-body settings-content">
+            <div class="settings-section-header">General</div>
+            <div class="settings-card">
+              <div class="settings-group" title="How fast the AI plays">
+                <label class="settings-label">Game speed<span class="settings-hint">How fast the AI plays</span></label>
+                <div class="segmented">
+                  <label><input type="checkbox" id="speed-settings-1" onchange="setGameSpeed(1000)"><span>Slow</span></label>
+                  <label><input type="checkbox" id="speed-settings-2" checked onchange="setGameSpeed(350)"><span>Normal</span></label>
+                  <label><input type="checkbox" id="speed-settings-3" onchange="setGameSpeed(100)"><span>Fast</span></label>
+                </div>
+              </div>
+              <div class="settings-group">
+                <label class="settings-label" for="sound-toggle">Sound effects</label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="sound-toggle" onchange="Feedback.setSound(this.checked)">
+                  <label for="sound-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group">
+                <label class="settings-label" for="haptics-toggle">Vibration</label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="haptics-toggle" onchange="Feedback.setHaptics(this.checked)">
+                  <label for="haptics-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group" title="Use high-resolution card art when available">
+                <label class="settings-label" for="enable-hires-toggle">High-resolution card art</label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="enable-hires-toggle" onchange="toggleEnableHiRes()">
+                  <label for="enable-hires-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group" title="Enable debug menu in game">
+                <label class="settings-label" for="debug-menu-settings-toggle">Debug menu</label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="debug-menu-settings-toggle" onchange="toggleDebugMenu()">
+                  <label for="debug-menu-settings-toggle" class="switch-label"></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-header">Custom game</div>
+            <div class="settings-card">
+              <div class="settings-group settings-group-stacked" title="Card sets loaded in the Custom Game deck builder">
+                <label class="settings-label" id="custom-sets-label" onclick="handleLoadSetsClick()">Card sets</label>
+                <div class="settings-checkboxes" id="custom-sets-checkboxes">
+                  <!-- Populated dynamically by JavaScript based on setRegistry -->
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-header">Gauntlet</div>
+            <div class="settings-card">
+              <div class="settings-group" title="Number of opponents you must defeat to complete the Gauntlet">
+                <label class="settings-label">Length<span class="settings-hint">Opponents to beat</span></label>
+                <div class="settings-stepper">
+                  <button class="stepper-btn" id="gauntlet-length-minus" onclick="adjustGauntletLength(-4)" aria-label="Fewer">−</button>
+                  <span class="stepper-value" id="gauntlet-length-value">4</span>
+                  <button class="stepper-btn" id="gauntlet-length-plus" onclick="adjustGauntletLength(4)" aria-label="More">+</button>
+                </div>
+              </div>
+              <div class="settings-group" title="Cycle through all four corp factions before repeating any faction">
+                <label class="settings-label" for="alternate-factions-toggle">Alternate corps<span class="settings-hint">Face every faction before any repeats</span></label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="alternate-factions-toggle" onchange="toggleAlternateFactions()">
+                  <label for="alternate-factions-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group" title="Distribute runner cards evenly across all factions in your Gauntlet starting card pool">
+                <label class="settings-label" for="balanced-factions-toggle">Balanced card pool<span class="settings-hint">Spread starting cards across factions</span></label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="balanced-factions-toggle" onchange="toggleBalancedFactions()">
+                  <label for="balanced-factions-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group" title="Shop packs only contain cards matching their category (e.g. Anarch pack = only Anarch cards). Makes the game easier.">
+                <label class="settings-label" for="strict-packs-toggle">Strict packs<span class="settings-hint">Packs only hold their own faction (easier)</span></label>
+                <div class="settings-switch">
+                  <input type="checkbox" id="strict-packs-toggle" onchange="toggleStrictPacks()">
+                  <label for="strict-packs-toggle" class="switch-label"></label>
+                </div>
+              </div>
+              <div class="settings-group settings-group-stacked" title="Card sets loaded for building your runner deck in Gauntlet mode">
+                <label class="settings-label" id="allowed-sets-label" onclick="handleLoadSetsClick()">Player card sets</label>
+                <div class="settings-checkboxes" id="gauntlet-sets-checkboxes">
+                  <!-- Populated dynamically by JavaScript based on setRegistry -->
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-header" title="Select which corp decks can appear as opponents in Gauntlet mode">Gauntlet opponents</div>
+            <div class="settings-card">
+              <div class="precon-list" id="precon-list">
+                <!-- Populated by JavaScript -->
+              </div>
+            </div>
+
+            <div class="settings-section-header">Data</div>
+            <div class="settings-card">
+              <div class="settings-group" title="Export all local data including settings and gauntlet saves">
+                <label class="settings-label">Back up<span class="settings-hint">Settings and gauntlet saves</span></label>
+                <button class="settings-btn" onclick="exportLocalData()">Export</button>
+              </div>
+              <div class="settings-group" title="Import previously exported data backup">
+                <label class="settings-label">Restore</label>
+                <button class="settings-btn" onclick="document.getElementById('import-data-input').click()">Import</button>
+                <input type="file" id="import-data-input" accept=".json" style="display:none;" onchange="importLocalData(event)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-panel achievements-panel" id="achievements-panel" style="display:none;">
+          <div class="panel-header achievements-header-row">
+            <button class="panel-back achievements-back" onclick="closeAchievements()" aria-label="Back"></button>
+            <div class="panel-title achievements-title">Achievements</div>
+          </div>
+          <div class="panel-body achievements-content">
+            <div class="settings-section-header achievements-section-header">High scores</div>
+            <div class="high-scores-list" id="high-scores-list">
+              <!-- Populated by JavaScript -->
+            </div>
+            <div class="settings-section-header achievements-section-header">Achievements</div>
+            <div class="achievements-list" id="achievements-list">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Data management modal -->
+        <div class="data-modal" id="data-modal" style="display:none;">
+          <div class="data-modal-content">
+            <div class="data-modal-title" id="data-modal-title">TITLE</div>
+            <div class="data-modal-message" id="data-modal-message">Message goes here</div>
+            <div class="data-modal-buttons" id="data-modal-buttons">
+              <button class="data-modal-btn" onclick="closeDataModal()">OK</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-panel tutorial-panel" id="tutorial-panel" style="display:none;">
+          <div class="panel-header tutorial-header-row">
+            <button class="panel-back tutorial-back" onclick="closeTutorial()" aria-label="Back"></button>
+            <div class="panel-title tutorial-title">Tutorial</div>
+          </div>
+          <div class="panel-body" id="tutorial-buttons">
+            <div id="tutorial-grid">
+              <div class="tutorial-item" onclick="startTutorial(0)"><span class="tutorial-number">1</span><span class="tutorial-label">Clicks and runs</span></div>
+              <div class="tutorial-item" onclick="startTutorial(1)"><span class="tutorial-number">2</span><span class="tutorial-label">Credits and card types</span></div>
+              <div class="tutorial-item" onclick="startTutorial(2)"><span class="tutorial-number">3</span><span class="tutorial-label">Ice and icebreakers</span></div>
+              <div class="tutorial-item" onclick="startTutorial(3)"><span class="tutorial-number">4</span><span class="tutorial-label">Assets and trash costs</span></div>
+              <div class="tutorial-item" onclick="startTutorial(4)"><span class="tutorial-number">5</span><span class="tutorial-label">Advancing and scoring</span></div>
+              <div class="tutorial-item" onclick="startTutorial(5)"><span class="tutorial-number">6</span><span class="tutorial-label">Upgrades and root</span></div>
+              <div class="tutorial-item" onclick="window.location.href='engine.html?ap=6&p=r&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&t=1'"><span class="tutorial-number">7</span><span class="tutorial-label">Play the corp starter deck</span></div>
+              <div class="tutorial-item" onclick="window.location.href='engine.html?ap=6&p=c&c=N4IglgJgpgdgLmOBPEAuAzABkwdhwGhAGMBDAJwgGc0BtLTdA+x-ZgTle3Q-oBZNOmfoN4AmEQFZJIgGyyRTbL0WYZvQWo0qZ27T2wz9uAfRwnsOAIyCrN8afsXHudDden1Hm1NM+LEgF0AXyA&r=N4IglgJgpgdgLmOBPEAuAzABkwdgGwA0IAxgIYBOEAzmgNpbaEOZPYCMATAQ59++n0xsALILYBWMZJ4AOQR0zzFDDm3lqVrTBy0cc8-SrlH5x7BwCc8qwyyC7t5dnRdbr5wNufnwgLoBfIA&t=1'"><span class="tutorial-number">8</span><span class="tutorial-label">Play the runner starter deck</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="meta-stack">
+      <span class="version">v0.6.13-BETA</span>
+      <span class="meta-dot" aria-hidden="true">·</span>
+      <a class="status-item" href="#" onclick="openCredits(); return false;">Credits</a>
+    </footer>
+  </div>
+
+  <script>
+    // Select random Girometics precon decks
+    var selectedRunnerDeck = null;
+    var selectedCorpDeck = null;
+    var playerDeck = null;
+    var aiDeck = null;
+    var giromRunnerDecks = [];
+    var giromCorpDecks = [];
+    
+    // Settings overrides (initialized from gauntletConfig on page load)
+    var settingsOverrides = {
+      gauntletLength: null,
+      alternateFactions: null,
+      balancedFactions: null,
+      strictPacks: null,
+      allowedSets: null,
+      customSets: null,  // Sets loaded in Custom Game / decklauncher
+      preconOverrides: {}  // Maps precon name to boolean override for useForGauntlet
+    };
+    
+    // ========================================
+    // ACHIEVEMENTS SYSTEM
+    // ========================================
+    var ACHIEVEMENTS_STORAGE_KEY = 'chiriboga-achievements';
+    
+    // Default achievements definition
+    var defaultAchievements = [
+      {
+        id: 'getHighScore',
+        name: 'High Scorer',
+        description: 'Record a High Score.',
+        achieved: false,
+        achievedAt: null,
+        hidden: false
+      },
+      {
+        id: 'beat4gauntlet',
+        name: 'Complete a short Gauntlet',
+        description: 'Survive a Gauntlet of 4 opponents.',
+        achieved: false,
+        achievedAt: null,
+        hidden: false
+      },
+      {
+        id: 'beat8gauntlet',
+        name: 'Complete a regular Gauntlet',
+        description: 'Survive a Gauntlet of 8 opponents.',
+        achieved: false,
+        achievedAt: null,
+        hidden: false
+      },
+      {
+        id: 'beat12gauntlet',
+        name: 'Complete a long Gauntlet',
+        description: 'Survive a Gauntlet of 12 opponents.',
+        achieved: false,
+        achievedAt: null,
+        hidden: false
+      }
+    ];
+    
+    // Default high scores structure (top 3)
+    var defaultHighScores = [
+      { score: 0, timestamp: null, identity: null },
+      { score: 0, timestamp: null, identity: null },
+      { score: 0, timestamp: null, identity: null }
+    ];
+    
+    // Initialize achievements in localStorage if not present
+    function initializeAchievements() {
+      try {
+        var existing = localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY);
+        if (!existing) {
+          // Create default achievements structure
+          var achievementsData = {
+            highScores: JSON.parse(JSON.stringify(defaultHighScores)),
+            achievements: JSON.parse(JSON.stringify(defaultAchievements))
+          };
+          localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(achievementsData));
+          return achievementsData;
+        } else {
+          // Parse existing data and merge any new achievements
+          var data = JSON.parse(existing);
+          
+          if (!Array.isArray(data.highScores)) {
+            data.highScores = JSON.parse(JSON.stringify(defaultHighScores));
+          } else if (data.highScores.length > 3) {
+            // Trim to top 3 if somehow more were added
+            data.highScores.sort(function(a, b) {
+              if (b.score !== a.score) return b.score - a.score;
+              return new Date(b.timestamp) - new Date(a.timestamp);
+            });
+            data.highScores = data.highScores.slice(0, 3);
+          }
+          
+          if (!Array.isArray(data.achievements)) {
+            data.achievements = [];
+          }
+          
+          // Merge in any new achievements that don't exist yet
+          var existingIds = {};
+          for (var i = 0; i < data.achievements.length; i++) {
+            existingIds[data.achievements[i].id] = true;
+          }
+          for (var j = 0; j < defaultAchievements.length; j++) {
+            if (!existingIds[defaultAchievements[j].id]) {
+              data.achievements.push(JSON.parse(JSON.stringify(defaultAchievements[j])));
+            }
+          }
+          
+          // Save back with any new achievements added
+          localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(data));
+          return data;
+        }
+      } catch (e) {
+        console.error('Error initializing achievements:', e);
+        return { highScores: JSON.parse(JSON.stringify(defaultHighScores)), achievements: JSON.parse(JSON.stringify(defaultAchievements)) };
+      }
+    }
+    
+    // Get achievements data
+    function getAchievements() {
+      try {
+        var data = localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY);
+        if (data) {
+          return JSON.parse(data);
+        }
+      } catch (e) {
+        console.error('Error reading achievements:', e);
+      }
+      return initializeAchievements();
+    }
+    
+    // Update high scores if new score qualifies for top 3
+    function updateHighScore(score, identity) {
+      try {
+        var data = getAchievements();
+        var dominated = data.highScores[2].score;
+        
+        if (score > dominated) {
+          // Add new score and sort
+          data.highScores.push({
+            score: score,
+            timestamp: new Date().toISOString(),
+            identity: identity
+          });
+          data.highScores.sort(function(a, b) { return b.score - a.score; });
+          data.highScores = data.highScores.slice(0, 3);
+          localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(data));
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.error('Error updating high score:', e);
+        return false;
+      }
+    }
+    
+    // Unlock an achievement by id
+    function unlockAchievement(achievementId) {
+      try {
+        var data = getAchievements();
+        for (var i = 0; i < data.achievements.length; i++) {
+          if (data.achievements[i].id === achievementId && !data.achievements[i].achieved) {
+            data.achievements[i].achieved = true;
+            data.achievements[i].achievedAt = new Date().toISOString();
+            localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(data));
+            return data.achievements[i];
+          }
+        }
+        return null;
+      } catch (e) {
+        console.error('Error unlocking achievement:', e);
+        return null;
+      }
+    }
+    
+    // Calculate achievement completion percentage
+    function getAchievementPercentage() {
+      var data = getAchievements();
+      if (!data.achievements || data.achievements.length === 0) return 0;
+      
+      var achieved = 0;
+      for (var i = 0; i < data.achievements.length; i++) {
+        if (data.achievements[i].achieved) {
+          achieved++;
+        }
+      }
+      return Math.round((achieved / data.achievements.length) * 100);
+    }
+    
+    // Update the achievement percentage display in the menu
+    function updateAchievementDisplay() {
+      var percent = getAchievementPercentage();
+      var displays = document.querySelectorAll('.achievement-percent');
+      for (var i = 0; i < displays.length; i++) {
+        displays[i].textContent = percent + '%';
+      }
+    }
+    
+    // ========================================
+    // END ACHIEVEMENTS SYSTEM
+    // ========================================
+    
+    function toggleCustomSet(setCode) {
+      var checkbox = document.getElementById('custom-set-' + setCode);
+      var idx = settingsOverrides.customSets.indexOf(setCode);
+      if (checkbox.checked && idx === -1) {
+        settingsOverrides.customSets.push(setCode);
+      } else if (!checkbox.checked && idx !== -1) {
+        settingsOverrides.customSets.splice(idx, 1);
+      }
+      saveSettings();
+    }
+    
+    // Hidden sets reveal tracking
+    var hiddenSetsRevealed = false;
+    var hiddenSetsClickCount = 0;
+    var hiddenSetsClickTimeout = null;
+    
+    // Check if hidden sets were previously revealed
+    function checkHiddenSetsRevealed() {
+      try {
+        var saved = localStorage.getItem('chiriboga-settings');
+        if (saved) {
+          var parsed = JSON.parse(saved);
+          if (parsed.hiddenSetsRevealed === true) {
+            hiddenSetsRevealed = true;
+          }
+        }
+      } catch (e) {}
+    }
+    
+    // Handle clicks on "Load Sets" labels to reveal hidden options
+    function handleLoadSetsClick() {
+      if (hiddenSetsRevealed) return; // Already revealed
+      
+      hiddenSetsClickCount++;
+      
+      // Reset click count after 2 seconds of no clicks
+      if (hiddenSetsClickTimeout) {
+        clearTimeout(hiddenSetsClickTimeout);
+      }
+      hiddenSetsClickTimeout = setTimeout(function() {
+        hiddenSetsClickCount = 0;
+      }, 2000);
+      
+      // Reveal hidden options after 6 clicks
+      if (hiddenSetsClickCount >= 6) {
+        hiddenSetsRevealed = true;
+        // Save to localStorage
+        try {
+          var saved = localStorage.getItem('chiriboga-settings');
+          var settings = saved ? JSON.parse(saved) : {};
+          settings.hiddenSetsRevealed = true;
+          localStorage.setItem('chiriboga-settings', JSON.stringify(settings));
+        } catch (e) {}
+        // Repopulate checkboxes to show hidden sets
+        populateSetCheckboxes();
+        // Re-apply checkbox states
+        initializeSettings();
+      }
+    }
+    
+    // Count cards in a set based on idRange
+    // forGauntlet: if true, only count runner cards; if false, count both corp and runner
+    function countCardsInSet(idRange, forGauntlet) {
+      if (!idRange || idRange.length !== 2) return 0;
+      var count = 0;
+      var minId = idRange[0];
+      var maxId = idRange[1];
+      
+      for (var cardId in cardSet) {
+        var id = parseInt(cardId);
+        if (id >= minId && id <= maxId && cardSet[cardId]) {
+          var card = cardSet[cardId];
+          // For gauntlet, only count runner cards
+          if (forGauntlet && card.player !== runner) continue;
+          count++;
+        }
+      }
+      return count;
+    }
+    
+    // Populate set checkboxes dynamically based on setRegistry
+    // Sets with hidden: true will not be displayed unless hiddenSetsRevealed is true
+    // Sets with untested: true will show "(Untested, X)" after the name where X is card count
+    function populateSetCheckboxes() {
+      var customContainer = document.getElementById('custom-sets-checkboxes');
+      var gauntletContainer = document.getElementById('gauntlet-sets-checkboxes');
+      
+      if (!customContainer || !gauntletContainer) return;
+      if (typeof setRegistry === 'undefined' || !setRegistry.availableSets) return;
+      
+      var customHtml = '';
+      var gauntletHtml = '';
+      
+      // Iterate through all sets in setRegistry.availableSets
+      // Display order follows the order defined in config.js
+      for (var setKey in setRegistry.availableSets) {
+        var set = setRegistry.availableSets[setKey];
+        if (!set) continue;
+        
+        // Skip hidden sets unless revealed
+        if (set.hidden === true && !hiddenSetsRevealed) continue;
+        
+        var code = set.code;
+        var name = set.name;
+        
+        // For untested sets, add card count
+        var customDisplayName = name;
+        var gauntletDisplayName = name;
+        if (set.untested === true) {
+          var customCardCount = countCardsInSet(set.idRange, false); // Count all cards for custom game
+          var gauntletCardCount = countCardsInSet(set.idRange, true); // Count only runner cards for gauntlet
+          customDisplayName = name + ' (Untested, ' + customCardCount + ')';
+          gauntletDisplayName = name + ' (Untested, ' + gauntletCardCount + ')';
+        }
+        var isSystemGateway = (code === 'sg');
+        
+        // Build checkbox HTML for Custom Game sets
+        if (isSystemGateway) {
+          customHtml += '<label class="checkbox-label checkbox-disabled" title="Core set, always included">';
+          customHtml += '<input type="checkbox" id="custom-set-' + code + '" checked disabled>';
+        } else {
+          customHtml += '<label class="checkbox-label" title="' + name + ' cards">';
+          customHtml += '<input type="checkbox" id="custom-set-' + code + '" onchange="toggleCustomSet(\'' + code + '\')">';
+        }
+        customHtml += '<span class="checkbox-text">' + customDisplayName + '</span></label>';
+        
+        // Build checkbox HTML for Gauntlet sets
+        if (isSystemGateway) {
+          gauntletHtml += '<label class="checkbox-label checkbox-disabled" title="Core set, always included">';
+          gauntletHtml += '<input type="checkbox" id="set-' + code + '" checked disabled>';
+        } else {
+          gauntletHtml += '<label class="checkbox-label" title="' + name + ' cards">';
+          gauntletHtml += '<input type="checkbox" id="set-' + code + '" onchange="toggleAllowedSet(\'' + code + '\')">';
+        }
+        gauntletHtml += '<span class="checkbox-text">' + gauntletDisplayName + '</span></label>';
+      }
+      
+      customContainer.innerHTML = customHtml;
+      gauntletContainer.innerHTML = gauntletHtml;
+    }
+    
+    // Load settings from localStorage, falling back to config defaults
+    function initializeSettings() {
+      var saved = null;
+      try {
+        var savedJson = localStorage.getItem('chiriboga-settings');
+        if (savedJson) {
+          saved = JSON.parse(savedJson);
+        }
+      } catch (e) {
+        console.warn('Could not load settings from localStorage:', e);
+      }
+      
+      // Use saved values if available, otherwise fall back to config
+      // Valid gauntlet lengths are 4, 8, or 12 - snap to nearest valid value
+      var rawGauntletLength = (saved && typeof saved.gauntletLength === 'number') 
+        ? saved.gauntletLength
+        : (gauntletConfig.gauntletLength || 4);
+      // Snap to nearest valid value (4, 8, or 12)
+      if (rawGauntletLength <= 6) {
+        settingsOverrides.gauntletLength = 4;
+      } else if (rawGauntletLength <= 10) {
+        settingsOverrides.gauntletLength = 8;
+      } else {
+        settingsOverrides.gauntletLength = 12;
+      }
+      settingsOverrides.alternateFactions = (saved && typeof saved.alternateFactions === 'boolean') 
+        ? saved.alternateFactions 
+        : (gauntletConfig.alternateFactions !== false);
+      settingsOverrides.balancedFactions = (saved && typeof saved.balancedFactions === 'boolean') 
+        ? saved.balancedFactions 
+        : (gauntletConfig.balancedFactions || false);
+      settingsOverrides.strictPacks = (saved && typeof saved.strictPacks === 'boolean') 
+        ? saved.strictPacks 
+        : (gauntletConfig.strictPacks || false);
+      
+      // Load gauntlet allowed sets (default from setRegistry.gauntletSets)
+      var defaultAllowedSets = (typeof setRegistry !== 'undefined' && Array.isArray(setRegistry.gauntletSets))
+        ? setRegistry.gauntletSets.map(function(s) {
+            // Convert set file names to set codes
+            if (typeof setRegistry.availableSets !== 'undefined' && setRegistry.availableSets[s]) {
+              return setRegistry.availableSets[s].code;
+            }
+            return s;
+          })
+        : ['sg', 'su21'];
+      settingsOverrides.allowedSets = (saved && Array.isArray(saved.allowedSets)) 
+        ? saved.allowedSets.slice() 
+        : defaultAllowedSets;
+      
+      // Ensure System Gateway is always included
+      if (settingsOverrides.allowedSets.indexOf('sg') === -1) {
+        settingsOverrides.allowedSets.push('sg');
+      }
+      
+      // Load custom game sets (default: sg, su21, elev per setRegistry.decklauncherSets)
+      var defaultCustomSets = (typeof setRegistry !== 'undefined' && Array.isArray(setRegistry.decklauncherSets))
+        ? setRegistry.decklauncherSets.map(function(s) {
+            // Convert set file names to set codes
+            if (typeof setRegistry.availableSets !== 'undefined' && setRegistry.availableSets[s]) {
+              return setRegistry.availableSets[s].code;
+            }
+            return s;
+          })
+        : ['sg', 'su21', 'elev'];
+      settingsOverrides.customSets = (saved && Array.isArray(saved.customSets)) 
+        ? saved.customSets.slice() 
+        : defaultCustomSets;
+      
+      // Ensure System Gateway is always included in custom sets
+      if (settingsOverrides.customSets.indexOf('sg') === -1) {
+        settingsOverrides.customSets.push('sg');
+      }
+      
+      // Load precon overrides
+      settingsOverrides.preconOverrides = (saved && typeof saved.preconOverrides === 'object' && saved.preconOverrides !== null)
+        ? saved.preconOverrides
+        : {};
+      
+      // Load game speed (default 350ms)
+      settingsOverrides.gameSpeed = (saved && typeof saved.gameSpeed === 'number')
+        ? saved.gameSpeed
+        : 350;
+      
+      // Load debug menu preference (default false)
+      settingsOverrides.debugMenuEnabled = (saved && typeof saved.debugMenuEnabled === 'boolean')
+        ? saved.debugMenuEnabled
+        : false;
+
+      // Load hi-res preference (default from config or false)
+      settingsOverrides.enableHiRes = (saved && typeof saved.enableHiRes === 'boolean')
+        ? saved.enableHiRes
+        : (typeof gauntletConfig !== 'undefined' && typeof gauntletConfig.enableHiRes === 'boolean' ? gauntletConfig.enableHiRes : false);
+
+      
+      // Update UI to match
+      document.getElementById('gauntlet-length-value').textContent = settingsOverrides.gauntletLength;
+      document.getElementById('alternate-factions-toggle').checked = settingsOverrides.alternateFactions;
+      document.getElementById('balanced-factions-toggle').checked = settingsOverrides.balancedFactions;
+      document.getElementById('strict-packs-toggle').checked = settingsOverrides.strictPacks;
+      
+      // Update Gauntlet Sets UI (dynamically created, may not exist if hidden)
+      for (var setKey in setRegistry.availableSets) {
+        var set = setRegistry.availableSets[setKey];
+        var gauntletCheckbox = document.getElementById('set-' + set.code);
+        if (gauntletCheckbox) {
+          gauntletCheckbox.checked = settingsOverrides.allowedSets.indexOf(set.code) !== -1;
+        }
+      }
+      
+      // Update Custom Game Sets UI (dynamically created, may not exist if hidden)
+      for (var setKey in setRegistry.availableSets) {
+        var set = setRegistry.availableSets[setKey];
+        var customCheckbox = document.getElementById('custom-set-' + set.code);
+        if (customCheckbox) {
+          customCheckbox.checked = settingsOverrides.customSets.indexOf(set.code) !== -1;
+        }
+      }
+      
+      // Set game speed checkboxes
+      document.getElementById('speed-settings-1').checked = (settingsOverrides.gameSpeed === 1000);
+      document.getElementById('speed-settings-2').checked = (settingsOverrides.gameSpeed === 350);
+      document.getElementById('speed-settings-3').checked = (settingsOverrides.gameSpeed === 100);
+      
+      // Set debug menu toggle
+      document.getElementById('debug-menu-settings-toggle').checked = settingsOverrides.debugMenuEnabled;
+      // Set hi-res toggle
+      document.getElementById('enable-hires-toggle').checked = settingsOverrides.enableHiRes;
+      // Sound and vibration live in mobile/feedback.js
+      if (window.Feedback) {
+        document.getElementById('sound-toggle').checked = Feedback.sound;
+        document.getElementById('haptics-toggle').checked = Feedback.haptics;
+      }
+      
+      // Update stepper button states
+      updateStepperButtons();
+      
+      // Populate precon list
+      populatePreconList();
+    }
+    
+    // Save settings to localStorage
+    function saveSettings() {
+      try {
+        var toSave = {
+          gauntletLength: settingsOverrides.gauntletLength,
+          alternateFactions: settingsOverrides.alternateFactions,
+          balancedFactions: settingsOverrides.balancedFactions,
+          strictPacks: settingsOverrides.strictPacks,
+          allowedSets: settingsOverrides.allowedSets,
+          customSets: settingsOverrides.customSets,
+          preconOverrides: settingsOverrides.preconOverrides,
+          gameSpeed: settingsOverrides.gameSpeed,
+          debugMenuEnabled: settingsOverrides.debugMenuEnabled,
+          enableHiRes: settingsOverrides.enableHiRes,
+          hiddenSetsRevealed: hiddenSetsRevealed,
+        };
+        localStorage.setItem('chiriboga-settings', JSON.stringify(toSave));
+      } catch (e) {
+        console.warn('Could not save settings to localStorage:', e);
+      }
+    }
+    
+    // Update stepper button disabled states based on current value
+    function updateStepperButtons() {
+      var minusBtn = document.getElementById('gauntlet-length-minus');
+      var plusBtn = document.getElementById('gauntlet-length-plus');
+      minusBtn.disabled = settingsOverrides.gauntletLength <= 4;
+      plusBtn.disabled = settingsOverrides.gauntletLength >= 12;
+    }
+    
+    // Settings control functions
+    function adjustGauntletLength(delta) {
+      var newVal = settingsOverrides.gauntletLength + delta;
+      // Valid values are 4, 8, or 12
+      if (newVal >= 4 && newVal <= 12 && newVal % 4 === 0) {
+        settingsOverrides.gauntletLength = newVal;
+        document.getElementById('gauntlet-length-value').textContent = newVal;
+        updateStepperButtons();
+        saveSettings();
+      }
+    }
+    
+    function toggleAlternateFactions() {
+      settingsOverrides.alternateFactions = document.getElementById('alternate-factions-toggle').checked;
+      saveSettings();
+    }
+    
+    function toggleBalancedFactions() {
+      settingsOverrides.balancedFactions = document.getElementById('balanced-factions-toggle').checked;
+      saveSettings();
+    }
+    
+    function toggleStrictPacks() {
+      settingsOverrides.strictPacks = document.getElementById('strict-packs-toggle').checked;
+      saveSettings();
+    }
+    
+    function setGameSpeed(speed) {
+      settingsOverrides.gameSpeed = speed;
+      // Update checkbox states to make them behave like radio buttons
+      document.getElementById('speed-settings-1').checked = (speed === 1000);
+      document.getElementById('speed-settings-2').checked = (speed === 350);
+      document.getElementById('speed-settings-3').checked = (speed === 100);
+      saveSettings();
+    }
+    
+    function toggleDebugMenu() {
+      settingsOverrides.debugMenuEnabled = document.getElementById('debug-menu-settings-toggle').checked;
+      saveSettings();
+    }
+
+    function toggleEnableHiRes() {
+      settingsOverrides.enableHiRes = document.getElementById('enable-hires-toggle').checked;
+      saveSettings();
+    }
+
+    function toggleAllowedSet(setCode) {
+      var checkbox = document.getElementById('set-' + setCode);
+      var idx = settingsOverrides.allowedSets.indexOf(setCode);
+      if (checkbox.checked && idx === -1) {
+        settingsOverrides.allowedSets.push(setCode);
+      } else if (!checkbox.checked && idx !== -1) {
+        settingsOverrides.allowedSets.splice(idx, 1);
+      }
+      saveSettings();
+    }
+    
+    // Populate precon list in settings
+    function populatePreconList() {
+      var listContainer = document.getElementById('precon-list');
+      if (!listContainer) return;
+      
+      listContainer.innerHTML = '';
+      
+      // Filter to corp precons only (gauntlet opponents)
+      var corpPrecons = preconDecks.filter(function(d) {
+        if (!cardSet[d.identity]) return false;
+        return cardSet[d.identity].player === corp;
+      });
+      
+      // Separate neutral decks from factioned decks
+      var neutralPrecons = [];
+      var factionedPrecons = [];
+      
+      for (var i = 0; i < corpPrecons.length; i++) {
+        var precon = corpPrecons[i];
+        var identity = cardSet[precon.identity];
+        var faction = identity.faction || 'Unknown';
+        
+        if (faction === 'Neutral') {
+          neutralPrecons.push(precon);
+        } else {
+          factionedPrecons.push(precon);
+        }
+      }
+      
+      // Sort each group by faction then name
+      factionedPrecons.sort(function(a, b) {
+        var factionA = cardSet[a.identity].faction || '';
+        var factionB = cardSet[b.identity].faction || '';
+        if (factionA !== factionB) return factionA.localeCompare(factionB);
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      
+      neutralPrecons.sort(function(a, b) {
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      
+      // Helper function to create a precon item
+      function createPreconItem(precon) {
+        var identity = cardSet[precon.identity];
+        var faction = identity.faction || 'Unknown';
+        
+        // Determine if enabled: override takes precedence, otherwise use precon default
+        var isEnabled = settingsOverrides.preconOverrides.hasOwnProperty(precon.name)
+          ? settingsOverrides.preconOverrides[precon.name]
+          : (precon.useForGauntlet === true);
+        
+        var item = document.createElement('div');
+        item.className = 'precon-item';
+        
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'precon-checkbox';
+        checkbox.checked = isEnabled;
+        checkbox.dataset.preconName = precon.name;
+        checkbox.onchange = function() {
+          togglePreconOverride(this.dataset.preconName, this.checked);
+        };
+        
+        var nameLink = document.createElement('a');
+        nameLink.className = 'precon-name';
+        nameLink.textContent = precon.name || 'Unknown Deck';
+        if (precon.URL) {
+          nameLink.href = precon.URL;
+          nameLink.target = '_blank';
+          nameLink.rel = 'noopener';
+        }
+        
+        var factionLabel = document.createElement('span');
+        factionLabel.className = 'precon-faction';
+        // Abbreviate faction names
+        var factionAbbrev = {
+          'Jinteki': 'JIN',
+          'Haas-Bioroid': 'HB',
+          'NBN': 'NBN',
+          'Weyland Consortium': 'WEY',
+          'Neutral': 'NEU'
+        };
+        factionLabel.textContent = factionAbbrev[faction] || faction.substring(0, 3).toUpperCase();
+        
+        item.appendChild(checkbox);
+        item.appendChild(nameLink);
+        item.appendChild(factionLabel);
+        return item;
+      }
+      
+      // Add description for factioned precons
+      var factionedDesc = document.createElement('div');
+      factionedDesc.className = 'precon-section-desc';
+      factionedDesc.textContent = 'The default Corp decks have been tested and should not lead to unexpected potentially game-breaking bugs.';
+      listContainer.appendChild(factionedDesc);
+      
+      // Add factioned precons first
+      for (var i = 0; i < factionedPrecons.length; i++) {
+        listContainer.appendChild(createPreconItem(factionedPrecons[i]));
+      }
+      
+      // Add neutral section if there are neutral decks
+      if (neutralPrecons.length > 0) {
+        var neutralHeader = document.createElement('div');
+        neutralHeader.className = 'precon-subheader';
+        neutralHeader.title = 'Neutral corp decks that can replace the final gauntlet opponent when Alternate Factions is ON';
+        neutralHeader.textContent = 'Neutral opponents';
+        listContainer.appendChild(neutralHeader);
+        
+        var neutralDesc = document.createElement('div');
+        neutralDesc.className = 'precon-section-desc';
+        neutralDesc.textContent = 'When Alternate Factions is ON, enabled neutral decks can replace the final gauntlet opponent.';
+        listContainer.appendChild(neutralDesc);
+        
+        for (var i = 0; i < neutralPrecons.length; i++) {
+          listContainer.appendChild(createPreconItem(neutralPrecons[i]));
+        }
+      }
+    }
+    
+    // Toggle precon override
+    function togglePreconOverride(preconName, enabled) {
+      settingsOverrides.preconOverrides[preconName] = enabled;
+      saveSettings();
+    }
+    
+    // Helper function to check if a precon is enabled for gauntlet
+    function isPreconEnabledForGauntlet(precon) {
+      if (settingsOverrides.preconOverrides.hasOwnProperty(precon.name)) {
+        return settingsOverrides.preconOverrides[precon.name];
+      }
+      return precon.useForGauntlet === true;
+    }
+    
+    // Function to select random decks
+    function selectRandomDecks() {
+      // Pick random decks
+      if (giromRunnerDecks.length > 0) {
+        selectedRunnerDeck = giromRunnerDecks[Math.floor(Math.random() * giromRunnerDecks.length)];
+      }
+      if (giromCorpDecks.length > 0) {
+        selectedCorpDeck = giromCorpDecks[Math.floor(Math.random() * giromCorpDecks.length)];
+      }
+      
+      // Randomly assign player vs AI
+      if (Math.random() < 0.5) {
+        playerDeck = selectedRunnerDeck;
+        aiDeck = selectedCorpDeck;
+      } else {
+        playerDeck = selectedCorpDeck;
+        aiDeck = selectedRunnerDeck;
+      }
+      
+      updatePortraits();
+    }
+    
+    // Function to update portraits: deal the two identities onto the table
+    function updatePortraits() {
+      if (playerDeck && aiDeck) {
+        setPortrait('player-portrait', cardSet[playerDeck.identity]);
+        setPortrait('ai-portrait', cardSet[aiDeck.identity]);
+        var shuffle = document.querySelector('.shuffle-button');
+        if (shuffle) {
+          shuffle.classList.remove('spin');
+          void shuffle.offsetWidth;
+          shuffle.classList.add('spin');
+        }
+        if (window.Feedback) Feedback.play('deal');
+      }
+    }
+    function setPortrait(id, identity) {
+      var container = document.getElementById(id);
+      if (!container || !identity) return;
+      var img = container.querySelector('.portrait');
+      img.classList.remove('loaded');
+      img.onload = function () { img.classList.add('loaded'); };
+      img.src = 'images/' + identity.imageFile.replace('.png', '.jpg');
+      container.classList.remove('dealt');
+      void container.offsetWidth;
+      container.classList.add('dealt');
+    }
+    
+    // Function to launch gauntlet mode
+    function LaunchGauntlet() {
+      // Generate gauntlet card subset
+      var gauntletCardIds = [];
+      var gauntletCardCounts = {};
+      
+      // Helper to check if card matches subtype requirements
+      function CardMatchesRequirement(cardId, matchSubtypes, excludeSubtypes) {
+        if (!cardSet[cardId] || !cardSet[cardId].subTypes) return false;
+        var cardSubtypes = cardSet[cardId].subTypes || [];
+        
+        if (excludeSubtypes && excludeSubtypes.length > 0) {
+          for (var i = 0; i < excludeSubtypes.length; i++) {
+            if (cardSubtypes.indexOf(excludeSubtypes[i]) !== -1) return false;
+          }
+        }
+        
+        if (!matchSubtypes || matchSubtypes.length === 0) return true;
+        
+        for (var i = 0; i < matchSubtypes.length; i++) {
+          if (cardSubtypes.indexOf(matchSubtypes[i]) === -1) return false;
+        }
+        return true;
+      }
+      
+      // Helper to check if card is from an allowed set
+      function CardFromAllowedSet(cardId) {
+        if (!settingsOverrides.allowedSets || settingsOverrides.allowedSets.length === 0) return true;
+        
+        var allowedSets = settingsOverrides.allowedSets;
+        var cardIdInt = parseInt(cardId);
+        var cardSetCode = null;
+        
+        // Use setRegistry to determine which set this card belongs to
+        if (typeof setRegistry !== 'undefined' && setRegistry.availableSets) {
+          for (var setKey in setRegistry.availableSets) {
+            var setInfo = setRegistry.availableSets[setKey];
+            if (setInfo.idRange && setInfo.idRange.length === 2) {
+              var minId = setInfo.idRange[0];
+              var maxId = setInfo.idRange[1];
+              if (cardIdInt >= minId && cardIdInt <= maxId) {
+                cardSetCode = setInfo.code;
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!cardSetCode) return false;
+        return allowedSets.indexOf(cardSetCode) !== -1;
+      }
+      
+      // Build exclusion list for locked fixed cards
+      var excludedCardIds = {};
+      if (gauntletConfig && gauntletConfig.lockedFixedCards && gauntletConfig.fixedCards) {
+        for (var i = 0; i < gauntletConfig.fixedCards.length; i++) {
+          excludedCardIds[gauntletConfig.fixedCards[i].id] = true;
+        }
+      }
+      
+      // Add fixed cards
+      if (gauntletConfig && gauntletConfig.fixedCards) {
+        for (var i = 0; i < gauntletConfig.fixedCards.length; i++) {
+          var fixedCard = gauntletConfig.fixedCards[i];
+          var cardId = fixedCard.id;
+          var quantity = fixedCard.quantity || 1;
+          gauntletCardCounts[cardId] = (gauntletCardCounts[cardId] || 0) + quantity;
+          for (var j = 0; j < quantity; j++) {
+            gauntletCardIds.push(cardId);
+          }
+        }
+      }
+      
+      // Add random cards
+      if (gauntletConfig && gauntletConfig.randomCardRequirements) {
+        var useBalancedFactions = settingsOverrides.balancedFactions || false;
+        var runnerFactions = ['Anarch', 'Criminal', 'Shaper', 'Neutral'];
+        
+        for (var req = 0; req < gauntletConfig.randomCardRequirements.length; req++) {
+          var requirement = gauntletConfig.randomCardRequirements[req];
+          var quantity = requirement.quantity || 0;
+          var cardType = requirement.cardType;
+          var matchSubtypes = requirement.matchSubtypes || [];
+          var excludeSubtypes = requirement.excludeSubtypes || [];
+          
+          if (useBalancedFactions) {
+            // Faction-balanced selection: distribute cards evenly across factions
+            var cardsByFaction = {};
+            for (var f = 0; f < runnerFactions.length; f++) {
+              cardsByFaction[runnerFactions[f]] = [];
+            }
+            
+            for (var cardId in cardSet) {
+              if (!cardSet[cardId]) continue;
+              if (cardSet[cardId].player !== runner) continue;
+              if (cardSet[cardId].cardType !== cardType) continue;
+              if (cardSet[cardId].cardType === 'identity') continue;
+              if (!CardFromAllowedSet(cardId)) continue;
+              if (excludedCardIds[cardId]) continue;
+              if (CardMatchesRequirement(cardId, matchSubtypes, excludeSubtypes)) {
+                var cardFaction = cardSet[cardId].faction || 'Neutral';
+                if (cardsByFaction[cardFaction]) {
+                  cardsByFaction[cardFaction].push(parseInt(cardId));
+                }
+              }
+            }
+            
+            // Get factions that have at least one matching card
+            var factionsWithCards = [];
+            for (var f = 0; f < runnerFactions.length; f++) {
+              if (cardsByFaction[runnerFactions[f]].length > 0) {
+                factionsWithCards.push(runnerFactions[f]);
+              }
+            }
+            
+            if (factionsWithCards.length === 0) continue;  // Skip if no cards match
+            
+            // Sort factions by pool size (smallest first) to prioritize smaller pools
+            factionsWithCards.sort(function(a, b) {
+              return cardsByFaction[a].length - cardsByFaction[b].length;
+            });
+            
+            // Calculate even distribution with remainder
+            var basePerFaction = Math.floor(quantity / factionsWithCards.length);
+            var remainder = quantity % factionsWithCards.length;
+            
+            // Select cards from each faction according to quota
+            for (var f = 0; f < factionsWithCards.length; f++) {
+              var faction = factionsWithCards[f];
+              var pool = cardsByFaction[faction].slice(); // Make a copy to sample without replacement
+              var target = basePerFaction + (f < remainder ? 1 : 0);  // First factions get +1 for remainder
+              
+              // If target exceeds pool size, we need to cycle through the pool multiple times
+              for (var s = 0; s < target; s++) {
+                if (pool.length === 0) {
+                  // Refill the pool if exhausted (rare case where target > pool size)
+                  pool = cardsByFaction[faction].slice();
+                }
+                var randomIdx = Math.floor(Math.random() * pool.length);
+                var selectedCard = pool[randomIdx];
+                gauntletCardIds.push(selectedCard);
+                gauntletCardCounts[selectedCard] = (gauntletCardCounts[selectedCard] || 0) + 1;
+                // Remove selected card from pool to prevent immediate duplicates
+                pool.splice(randomIdx, 1);
+              }
+            }
+          } else {
+            // Original unbalanced selection: pick randomly from entire pool
+            var matchingCards = [];
+            for (var cardId in cardSet) {
+              if (!cardSet[cardId]) continue;
+              if (cardSet[cardId].player !== runner) continue;
+              if (cardSet[cardId].cardType !== cardType) continue;
+              if (cardSet[cardId].cardType === 'identity') continue;
+              if (!CardFromAllowedSet(cardId)) continue;
+              if (excludedCardIds[cardId]) continue;
+              if (CardMatchesRequirement(cardId, matchSubtypes, excludeSubtypes)) {
+                matchingCards.push(parseInt(cardId));
+              }
+            }
+            
+            var selected = 0;
+            while (selected < quantity && matchingCards.length > 0) {
+              var randomIdx = Math.floor(Math.random() * matchingCards.length);
+              var selectedCard = matchingCards[randomIdx];
+              gauntletCardIds.push(selectedCard);
+              gauntletCardCounts[selectedCard] = (gauntletCardCounts[selectedCard] || 0) + 1;
+              selected++;
+            }
+          }
+        }
+      }
+      
+      // Select opponents based on gauntlet configuration
+      var gauntletLength = settingsOverrides.gauntletLength || 4;
+      var alternateFactions = settingsOverrides.alternateFactions;
+      
+      // Initialize perk pools for opponent starting perks
+      // Regular perks are clustered: each cluster contains [1,2,3] shuffled
+      // This ensures perks 1, 2, and 3 each appear once before any repeats
+      var regularPerks = [];
+      for (var cluster = 0; cluster < 3; cluster++) {
+        var clusterPerks = [1, 2, 3];
+        // Shuffle this cluster
+        for (var i = clusterPerks.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var temp = clusterPerks[i];
+          clusterPerks[i] = clusterPerks[j];
+          clusterPerks[j] = temp;
+        }
+        // Add shuffled cluster to pool
+        regularPerks = regularPerks.concat(clusterPerks);
+      }
+      var bossPerks = [4,5,6];
+      
+      // Shuffle the boss perk pool
+      for (var i = bossPerks.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = bossPerks[i];
+        bossPerks[i] = bossPerks[j];
+        bossPerks[j] = temp;
+      }
+      
+      // Helper function to get starting perk for opponent number (1-indexed)
+      function getStartingPerk(opponentNum) {
+        // Opponents 1-3 => Draw from regularPerks
+        if (opponentNum >= 1 && opponentNum <= 3) {
+          return regularPerks.length > 0 ? regularPerks.shift() : 0;
+        }
+        // Opponent 4 => Draw from bossPerks
+        if (opponentNum === 4) {
+          return bossPerks.length > 0 ? bossPerks.shift() : 0;
+        }
+        // Opponents 5-7 => Draw from regularPerks
+        if (opponentNum >= 5 && opponentNum <= 7) {
+          return regularPerks.length > 0 ? regularPerks.shift() : 0;
+        }
+        // Opponent 8 => Draw from bossPerks
+        if (opponentNum === 8) {
+          return bossPerks.length > 0 ? bossPerks.shift() : 0;
+        }
+        // Opponents 9-11 => Draw from regularPerks
+        if (opponentNum >= 9 && opponentNum <= 11) {
+          return regularPerks.length > 0 ? regularPerks.shift() : 0;
+        }
+        // Opponent 12 => Draw from bossPerks
+        if (opponentNum === 12) {
+          return bossPerks.length > 0 ? bossPerks.shift() : 0;
+        }
+        // Opponent 13 and up => Always 0
+        return 0;
+      }
+      
+      var selectedOpponents = [];
+      
+      if (alternateFactions) {
+        // Select opponents cycling through factions, with each faction getting equal representation
+        // Re-shuffle faction order every 4 opponents so no repeats within a cluster
+        var allCorpFactions = ['Jinteki', 'Haas-Bioroid', 'NBN', 'Weyland Consortium'];
+        
+        // Build a list of factions with reshuffling every 4
+        var corpFactions = [];
+        for (var cluster = 0; cluster < Math.ceil(gauntletLength / 4); cluster++) {
+          // Shuffle factions for this cluster
+          var clusterFactions = allCorpFactions.slice(); // copy array
+          for (var i = clusterFactions.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = clusterFactions[i];
+            clusterFactions[i] = clusterFactions[j];
+            clusterFactions[j] = temp;
+          }
+          // Add this cluster's factions to the list
+          for (var i = 0; i < clusterFactions.length; i++) {
+            corpFactions.push(clusterFactions[i]);
+          }
+        }
+        
+        // Trim to gauntletLength
+        corpFactions = corpFactions.slice(0, gauntletLength);
+        
+        for (var f = 0; f < corpFactions.length; f++) {
+          var faction = corpFactions[f];
+          var candidateDecks = preconDecks.filter(function(d) {
+            if (!isPreconEnabledForGauntlet(d)) return false;
+            if (!cardSet[d.identity]) return false;
+            var identity = cardSet[d.identity];
+            return identity.player === corp && identity.faction === faction;
+          });
+          
+          if (candidateDecks.length > 0) {
+            var chosen = candidateDecks[Math.floor(Math.random() * candidateDecks.length)];
+            var chosenIdentity = cardSet[chosen.identity];
+            var opponent = {identity: parseInt(chosen.identity), cards: [], name: chosen.name || 'Unknown Deck', faction: chosenIdentity.faction || 'Unknown', URL: chosen.URL || '', hasbeendefeated: false};
+            selectedOpponents.push(opponent);
+            // Populate cards from precon
+            for (var cc in chosen.cards) {
+              if (!chosen.cards.hasOwnProperty(cc)) continue;
+              var qty = chosen.cards[cc];
+              for (var q = 0; q < qty; q++) {
+                opponent.cards.push(parseInt(cc));
+              }
+            }
+          }
+        }
+        
+        // Check if we should replace the final opponent with a neutral deck
+        if (gauntletLength > 0 && selectedOpponents.length === gauntletLength) {
+          var neutralBossChance = (typeof gauntletConfig.neutralBossChance === 'number') 
+            ? gauntletConfig.neutralBossChance 
+            : 0.25;
+          
+          if (Math.random() < neutralBossChance) {
+            // Find available neutral corp decks
+            var neutralDecks = preconDecks.filter(function(d) {
+              if (!isPreconEnabledForGauntlet(d)) return false;
+              if (!cardSet[d.identity]) return false;
+              var identity = cardSet[d.identity];
+              return identity.player === corp && identity.faction === 'Neutral';
+            });
+            
+            if (neutralDecks.length > 0) {
+              // Replace the last opponent with a random neutral deck
+              var chosen = neutralDecks[Math.floor(Math.random() * neutralDecks.length)];
+              var chosenIdentity = cardSet[chosen.identity];
+              var opponent = {identity: parseInt(chosen.identity), cards: [], name: chosen.name || 'Unknown Deck', faction: chosenIdentity.faction || 'Unknown', URL: chosen.URL || '', hasbeendefeated: false};
+              
+              // Populate cards from precon
+              for (var cc in chosen.cards) {
+                if (!chosen.cards.hasOwnProperty(cc)) continue;
+                var qty = chosen.cards[cc];
+                for (var q = 0; q < qty; q++) {
+                  opponent.cards.push(parseInt(cc));
+                }
+              }
+              
+              // Replace the last opponent
+              selectedOpponents[selectedOpponents.length - 1] = opponent;
+            }
+          }
+        }
+      } else {
+        // Randomly select opponents from all factions without faction constraint
+        // Allows duplicates only after cycling through all available decks
+        var candidateDecks = preconDecks.filter(function(d) {
+          if (!isPreconEnabledForGauntlet(d)) return false;
+          if (!cardSet[d.identity]) return false;
+          var identity = cardSet[d.identity];
+          return identity.player === corp;
+        });
+        
+        // Track which decks have been used to avoid repeating until all are cycled
+        var availableIndices = [];
+        for (var idx = 0; idx < candidateDecks.length; idx++) {
+          availableIndices.push(idx);
+        }
+        
+        for (var o = 0; o < gauntletLength && candidateDecks.length > 0; o++) {
+          // If we've used all available decks, reset the pool
+          if (availableIndices.length === 0) {
+            for (var idx = 0; idx < candidateDecks.length; idx++) {
+              availableIndices.push(idx);
+            }
+          }
+          
+          // Pick a random index from available indices
+          var randomAvailablePos = Math.floor(Math.random() * availableIndices.length);
+          var deckIndex = availableIndices[randomAvailablePos];
+          
+          // Remove this index from available pool
+          availableIndices.splice(randomAvailablePos, 1);
+          
+          var chosen = candidateDecks[deckIndex];
+          var chosenIdentity = cardSet[chosen.identity];
+          var opponent = {identity: parseInt(chosen.identity), cards: [], name: chosen.name || 'Unknown Deck', faction: chosenIdentity.faction || 'Unknown', URL: chosen.URL || '', hasbeendefeated: false};
+          selectedOpponents.push(opponent);
+          // Populate cards from precon
+          for (var cc in chosen.cards) {
+            if (!chosen.cards.hasOwnProperty(cc)) continue;
+            var qty = chosen.cards[cc];
+            for (var q = 0; q < qty; q++) {
+              opponent.cards.push(parseInt(cc));
+            }
+          }
+        }
+      }
+      
+      // Assign starting perks to all selected opponents
+      for (var opIdx = 0; opIdx < selectedOpponents.length; opIdx++) {
+        selectedOpponents[opIdx].startingPerk = getStartingPerk(opIdx + 1); // opIdx+1 for 1-indexed opponent number
+      }
+      
+      // Generate unique 1337-speak corp names for each opponent (max 8 chars each)
+      var leetCorpNames = [
+        'xX_C0rP', 'D4t4.VuL', 'n3X7~g3N', 'SyS7_c0r',
+        'm3G4::Cp', 'Zer0_D4w', 'c0D3.r3D', 'H4cK~Pr0',
+        'F1r3|W4L', 'd4Rk_N0d', 'Gh0s7.N3', 'V1rU5~Fr',
+        'cR4sH_73', 'r007|4cC', '5yS.0v3R', 'gL17cH_F',
+        '4p3X~C0r', 'N0v4_53c', 'Ph4n70M.', 'cYb3R|L0',
+        '7r4C3_Nu', 'pR070~M4', 'Qu4n7uM.', '5734L7H_',
+        'bL4cK|1c', 'R3d_Qu33', '5p1D3r.A', 'v3C70R~9',
+        'Null.p7R', 'w4RM_h0L', '1c3~Br34', 'Pr0Xy|99',
+        'd33P_w3B', 'n0D3.x3C', 'Z3r0|d4Y', 'C0r3~DmP'
+      ];
+      
+      // Shuffle the names array
+      for (var i = leetCorpNames.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = leetCorpNames[i];
+        leetCorpNames[i] = leetCorpNames[j];
+        leetCorpNames[j] = temp;
+      }
+      
+      // Assign unique names to each opponent
+      for (var opIdx = 0; opIdx < selectedOpponents.length; opIdx++) {
+        selectedOpponents[opIdx].gauntletCorpName = leetCorpNames[opIdx % leetCorpNames.length];
+      }
+      
+      // Create gauntlet state object
+      var seed = Math.random().toString(36).substring(2, 15);
+      var gauntletState = {
+        subset: gauntletCardCounts,
+        opponents: selectedOpponents,
+        defeated: 0,
+        defeatOrder: [], // Track the order in which opponents were defeated (array of opponent indices)
+        agendaScored: 0,
+        agendaStolen: 0,
+        credits: gauntletConfig && gauntletConfig.startingCredits ? gauntletConfig.startingCredits : 0,
+        creditsWon: 0,
+        creditsWonText: "",
+        gauntletLength: gauntletLength,
+        allowedSets: settingsOverrides.allowedSets || [],
+        strictPacks: settingsOverrides.strictPacks || false,
+        seed: seed,
+        shopPurchaseCount: 0
+      };
+      
+      // Encode gauntlet state
+      var encodedG = LZString.compressToEncodedURIComponent(JSON.stringify(gauntletState));
+      
+      // Select random runner identity
+      var runnerIdentities = [];
+      for (var i = 0; i < cardSet.length; i++) {
+        if (cardSet[i] && cardSet[i].cardType === 'identity' && cardSet[i].player === runner) {
+          // Check if this identity is allowed in gauntlet config
+          if (gauntletConfig.allowedIdentities && gauntletConfig.allowedIdentities.runnerIds && gauntletConfig.allowedIdentities.runnerIds.length > 0) {
+            // Only include if in the allowed list
+            if (gauntletConfig.allowedIdentities.runnerIds.indexOf(i) !== -1) {
+              runnerIdentities.push(i);
+            }
+          } else {
+            // No restrictions, include all runners
+            runnerIdentities.push(i);
+          }
+        }
+      }
+      
+      var randomRunner = runnerIdentities[Math.floor(Math.random() * runnerIdentities.length)];
+      
+      // Create empty runner deck with random identity
+      var runnerDeck = {identity: randomRunner, cards: []};
+      var encodedR = LZString.compressToEncodedURIComponent(JSON.stringify(runnerDeck));
+      
+      // Use first corp opponent as starting opponent
+      var corpOpponentDeck = selectedOpponents[0];
+      var encodedC = LZString.compressToEncodedURIComponent(JSON.stringify(corpOpponentDeck));
+      
+      // Navigate to gauntlet
+      window.location.href = 'gauntlet.html?r=' + encodedR + '&c=' + encodedC + '&g=' + encodedG;
+    }
+    
+
+    // Wait for all scripts to load before selecting decks
+    window.addEventListener('load', function() {
+      // Filter Quick Game decks by side
+      giromRunnerDecks = preconDecks.filter(function(d) {
+        var isQuickGameDeck = d.useForQuickGame === true;
+        var hasIdentity = cardSet[d.identity];
+        var isRunner = hasIdentity && cardSet[d.identity].player === runner;
+        return isQuickGameDeck && hasIdentity && isRunner;
+      });
+      giromCorpDecks = preconDecks.filter(function(d) {
+        var isQuickGameDeck = d.useForQuickGame === true;
+        var hasIdentity = cardSet[d.identity];
+        var isCorp = hasIdentity && cardSet[d.identity].player === corp;
+        return isQuickGameDeck && hasIdentity && isCorp;
+      });
+      
+      // Select initial random decks
+      selectRandomDecks();
+
+      // Check if hidden sets were previously revealed
+      checkHiddenSetsRevealed();
+      
+      // Populate set checkboxes dynamically (respects hidden flag in config)
+      populateSetCheckboxes();
+      
+      // Initialize settings from config
+      initializeSettings();
+      
+      // Initialize achievements and update display
+      initializeAchievements();
+      updateAchievementDisplay();
+
+    });
+    
+    function handleMenu(option, evt) {
+      // Initialize achievements if not already present
+      initializeAchievements();
+      
+      // Register implementation so early queued clicks can be flushed
+      try { window.handleMenuImpl = handleMenu; } catch(e) {}
+      try { if (window._flushQueuedMenuClicks) window._flushQueuedMenuClicks(); } catch(e) {}
+
+      var item = null;
+      if (evt && evt.target) {
+        item = evt.target.closest('.menu-item');
+      } else {
+        // Try to locate the menu item using the onclick attribute matching
+        try {
+          item = document.querySelector('.menu-item[onclick*="handleMenu(\'' + option + "'" + ')"]');
+        } catch(e) { item = null; }
+        if (!item) {
+          // Fallback: find by text
+          var nodes = document.querySelectorAll('.menu-item');
+          for (var i=0;i<nodes.length;i++) {
+            if (nodes[i].textContent.trim().toLowerCase().indexOf(option) !== -1) { item = nodes[i]; break; }
+          }
+        }
+      }
+      
+      // Handle tutorial
+      if (option === 'tutorial') {
+        openTutorial();
+        return;
+      }
+      
+      // Handle gauntlet/tournament mode - show submenu
+      if (option === 'tournament') {
+        showGauntletSubmenu();
+        return;
+      }
+      
+      // Handle settings
+      if (option === 'settings') {
+        openSettings();
+        return;
+      }
+      
+      // Handle achievements
+      if (option === 'achievements') {
+        openAchievements();
+        return;
+      }
+      
+      // Anything else isn't implemented
+      if (option !== 'quick' && option !== 'custom') return;
+
+      if (item) item.classList.add('is-loading');
+      setTimeout(() => {
+        // Navigate based on option
+        if (option === 'custom' && playerDeck && aiDeck) {
+          // Build compressed deck strings from precon format
+          var playerJson = {identity: parseInt(playerDeck.identity), cards: []};
+          if (playerDeck.notes) playerJson.notes = playerDeck.notes;
+          if (playerDeck.name) playerJson.name = playerDeck.name;
+          if (playerDeck.URL) playerJson.url = playerDeck.URL;
+          for (var cardId in playerDeck.cards) {
+            var count = playerDeck.cards[cardId];
+            for (var i = 0; i < count; i++) {
+              playerJson.cards.push(parseInt(cardId));
+            }
+          }
+          var aiJson = {identity: parseInt(aiDeck.identity), cards: []};
+          if (aiDeck.notes) aiJson.notes = aiDeck.notes;
+          if (aiDeck.name) aiJson.name = aiDeck.name;
+          if (aiDeck.URL) aiJson.url = aiDeck.URL;
+          for (var cardId in aiDeck.cards) {
+            var count = aiDeck.cards[cardId];
+            for (var i = 0; i < count; i++) {
+              aiJson.cards.push(parseInt(cardId));
+            }
+          }
+          
+          var playerCompressed = LZString.compressToEncodedURIComponent(JSON.stringify(playerJson));
+          var aiCompressed = LZString.compressToEncodedURIComponent(JSON.stringify(aiJson));
+          
+          // Determine player side (r=runner, c=corp)
+          var playerSide = (cardSet[playerDeck.identity].player === runner) ? 'r' : 'c';
+          var aiSide = (cardSet[aiDeck.identity].player === runner) ? 'r' : 'c';
+          
+          window.location.href = 'decklauncher.html?p=' + playerSide + 
+                                 '&' + aiSide + '=' + aiCompressed + 
+                                 '&' + playerSide + '=' + playerCompressed;
+        } else if (option === 'quick' && playerDeck && aiDeck) {
+          // Build compressed deck strings from precon format
+          var playerJson = {identity: parseInt(playerDeck.identity), cards: []};
+          if (playerDeck.notes) playerJson.notes = playerDeck.notes;
+          if (playerDeck.name) playerJson.name = playerDeck.name;
+          if (playerDeck.URL) playerJson.url = playerDeck.URL;
+          for (var cardId in playerDeck.cards) {
+            var count = playerDeck.cards[cardId];
+            for (var i = 0; i < count; i++) {
+              playerJson.cards.push(parseInt(cardId));
+            }
+          }
+          var aiJson = {identity: parseInt(aiDeck.identity), cards: []};
+          if (aiDeck.notes) aiJson.notes = aiDeck.notes;
+          if (aiDeck.name) aiJson.name = aiDeck.name;
+          if (aiDeck.URL) aiJson.url = aiDeck.URL;
+          for (var cardId in aiDeck.cards) {
+            var count = aiDeck.cards[cardId];
+            for (var i = 0; i < count; i++) {
+              aiJson.cards.push(parseInt(cardId));
+            }
+          }
+          
+          var playerCompressed = LZString.compressToEncodedURIComponent(JSON.stringify(playerJson));
+          var aiCompressed = LZString.compressToEncodedURIComponent(JSON.stringify(aiJson));
+          
+          // Determine player side (r=runner, c=corp)
+          var playerSide = (cardSet[playerDeck.identity].player === runner) ? 'r' : 'c';
+          var aiSide = (cardSet[aiDeck.identity].player === runner) ? 'r' : 'c';
+          
+          window.location.href = 'engine.html?p=' + playerSide + 
+                                 '&' + aiSide + '=' + aiCompressed + 
+                                 '&' + playerSide + '=' + playerCompressed +
+                                 '&showdeck=1';
+        }
+      }, 150);
+    }
+
+    // Menu panels (credits, settings, achievements, tutorial) open as
+    // full-screen sheets over the menu and slide away when closed.
+    function openMenuPanel(id) {
+      var panel = document.getElementById(id);
+      if (panel.style.display === 'flex' && !panel.classList.contains('closing')) {
+        closeMenuPanel(id);
+        return false;
+      }
+      panel.classList.remove('closing');
+      panel.style.display = 'flex';
+      var body = panel.querySelector('.panel-body');
+      if (body) body.scrollTop = 0;
+      return true;
+    }
+    function closeMenuPanel(id) {
+      var panel = document.getElementById(id);
+      if (panel.style.display === 'none') return;
+      panel.classList.add('closing');
+      var done = function () {
+        panel.removeEventListener('animationend', done);
+        if (!panel.classList.contains('closing')) return;
+        panel.classList.remove('closing');
+        panel.style.display = 'none';
+      };
+      panel.addEventListener('animationend', done);
+      setTimeout(done, 400); // in case animations are off
+    }
+    // The system back gesture closes an open panel instead of leaving the app.
+    window.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      ['tutorial-panel', 'achievements-panel', 'settings-panel', 'credits-panel'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && el.style.display === 'flex') closeMenuPanel(id);
+      });
+    });
+    // Coming back to the menu with the browser's back/forward cache.
+    window.addEventListener('pageshow', function () {
+      document.querySelectorAll('.menu-item.is-loading').forEach(function (el) { el.classList.remove('is-loading'); });
+    });
+
+    function openCredits(){ openMenuPanel('credits-panel'); }
+    function closeCredits(){ closeMenuPanel('credits-panel'); }
+    function openSettings(){ openMenuPanel('settings-panel'); }
+    function closeSettings(){ closeMenuPanel('settings-panel'); }
+    function openAchievements(){
+      if (openMenuPanel('achievements-panel')) populateAchievementsPanel();
+    }
+    function closeAchievements(){ closeMenuPanel('achievements-panel'); }
+
+    // Format a timestamp as a short local date
+    function formatAchievementDate(timestamp) {
+      if (!timestamp) return '';
+      return new Date(timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    
+    // Get card image path from identity ID
+    function getIdentityImagePath(identityId) {
+      if (!identityId || !cardSet[identityId]) return '';
+      var identity = cardSet[identityId];
+      if (identity && identity.imageFile) {
+        return 'images/' + identity.imageFile.replace('.png', '.jpg');
+      }
+      return '';
+    }
+    
+    // Populate the achievements panel with high scores and achievements
+    function populateAchievementsPanel() {
+      var data = getAchievements();
+      
+      // Populate high scores (sorted descending by score)
+      var highScoresList = document.getElementById('high-scores-list');
+      highScoresList.innerHTML = '';
+      
+      // Sort high scores by score descending, then by timestamp descending for ties (latest first)
+      var sortedScores = data.highScores.slice().sort(function(a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        // For ties, latest timestamp first (descending)
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+      
+      // Check if there are any valid scores
+      var hasValidScores = sortedScores.some(function(hs) { return hs.score > 0; });
+      
+      if (!hasValidScores) {
+        var emptyRow = document.createElement('div');
+        emptyRow.className = 'high-score-row high-score-empty';
+        emptyRow.textContent = 'No high scores yet. Complete a Gauntlet!';
+        highScoresList.appendChild(emptyRow);
+      } else {
+        var displayCount = 0;
+        for (var i = 0; i < sortedScores.length && displayCount < 3; i++) {
+          var hs = sortedScores[i];
+          if (hs.score <= 0) continue; // Skip empty scores
+          displayCount++;
+          
+          var row = document.createElement('div');
+          row.className = 'high-score-row';
+          
+          // Identity thumbnail
+          var thumb = document.createElement('div');
+          thumb.className = 'high-score-thumb';
+          if (hs.identity) {
+            var imgPath = getIdentityImagePath(hs.identity);
+            if (imgPath) {
+              var img = document.createElement('img');
+              img.src = imgPath;
+              img.alt = '';
+              thumb.appendChild(img);
+            }
+          }
+          row.appendChild(thumb);
+          
+          // Score
+          var scoreEl = document.createElement('div');
+          scoreEl.className = 'high-score-score';
+          scoreEl.textContent = hs.score;
+          row.appendChild(scoreEl);
+          
+          // Date
+          var dateEl = document.createElement('div');
+          dateEl.className = 'high-score-date';
+          dateEl.textContent = formatAchievementDate(hs.timestamp);
+          row.appendChild(dateEl);
+          
+          highScoresList.appendChild(row);
+        }
+      }
+      
+      // Populate achievements
+      var achievementsList = document.getElementById('achievements-list');
+      achievementsList.innerHTML = '';
+      
+      for (var i = 0; i < data.achievements.length; i++) {
+        var achievement = data.achievements[i];
+        
+        var row = document.createElement('div');
+        row.className = 'achievement-row' + (achievement.achieved ? '' : ' achievement-incomplete');
+        row.title = achievement.description;
+        
+        // Achievement name
+        var textEl = document.createElement('div');
+        textEl.className = 'achievement-text';
+        var nameEl = document.createElement('div');
+        nameEl.className = 'achievement-name';
+        nameEl.textContent = achievement.name;
+        textEl.appendChild(nameEl);
+        if (achievement.description) {
+          var descEl = document.createElement('div');
+          descEl.className = 'achievement-desc';
+          descEl.textContent = achievement.description;
+          textEl.appendChild(descEl);
+        }
+        row.appendChild(textEl);
+        
+        // Achievement date (only if achieved)
+        var dateEl = document.createElement('div');
+        dateEl.className = 'achievement-date';
+        if (achievement.achieved && achievement.achievedAt) {
+          dateEl.textContent = formatAchievementDate(achievement.achievedAt);
+        }
+        row.appendChild(dateEl);
+        
+        achievementsList.appendChild(row);
+      }
+    }
+
+    // Data modal helper functions
+    var dataModalCallback = null;
+    
+    function showDataModal(title, message, buttons) {
+      var modal = document.getElementById('data-modal');
+      var titleEl = document.getElementById('data-modal-title');
+      var messageEl = document.getElementById('data-modal-message');
+      var buttonsEl = document.getElementById('data-modal-buttons');
+      
+      titleEl.textContent = title;
+      messageEl.innerHTML = message;
+      
+      // Build buttons
+      buttonsEl.innerHTML = '';
+      buttons.forEach(function(btn) {
+        var button = document.createElement('button');
+        button.className = 'data-modal-btn' + (btn.secondary ? ' secondary' : '');
+        button.textContent = btn.text;
+        button.onclick = function() {
+          closeDataModal();
+          if (btn.callback) btn.callback();
+        };
+        buttonsEl.appendChild(button);
+      });
+      
+      modal.style.display = 'flex';
+    }
+    
+    function closeDataModal() {
+      var modal = document.getElementById('data-modal');
+      modal.style.display = 'none';
+    }
+    
+    function showDataAlert(title, message, callback) {
+      showDataModal(title, message, [
+        { text: 'OK', callback: callback }
+      ]);
+    }
+    
+    function showDataConfirm(title, message, onConfirm, onCancel) {
+      showDataModal(title, message, [
+        { text: 'CANCEL', secondary: true, callback: onCancel },
+        { text: 'CONFIRM', callback: onConfirm }
+      ]);
+    }
+
+    // Export all localStorage data to a JSON file
+    function exportLocalData() {
+      try {
+        var exportData = {};
+        
+        // Iterate through all localStorage keys
+        for (var i = 0; i < localStorage.length; i++) {
+          var key = localStorage.key(i);
+          // Only export chiriboga-related keys
+          if (key && key.indexOf('chiriboga') === 0) {
+            exportData[key] = localStorage.getItem(key);
+          }
+        }
+        
+        var keyCount = Object.keys(exportData).length;
+        if (keyCount === 0) {
+          showDataAlert('NO DATA', 'There is no saved data to export.');
+          return;
+        }
+        
+        // Create the export object with metadata
+        var exportWrapper = {
+          version: 1,
+          exportDate: new Date().toISOString(),
+          data: exportData
+        };
+        
+        // Create and download the file
+        var blob = new Blob([JSON.stringify(exportWrapper, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'chiriboga-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showDataAlert('EXPORT COMPLETE', 'Your data has been saved to a backup file.');
+        console.log('Data exported successfully');
+      } catch (e) {
+        console.error('Failed to export data:', e);
+        showDataAlert('EXPORT FAILED', 'Could not export data: ' + e.message);
+      }
+    }
+    
+    // Import localStorage data from a JSON file
+    function importLocalData(event) {
+      var file = event.target.files[0];
+      if (!file) return;
+      
+      // Limit file size to 5MB to prevent abuse
+      if (file.size > 5 * 1024 * 1024) {
+        showDataAlert('FILE TOO LARGE', 'Backup file exceeds the 5MB size limit.');
+        event.target.value = '';
+        return;
+      }
+      
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var importWrapper = JSON.parse(e.target.result);
+          
+          // Validate the import file
+          if (!importWrapper || !importWrapper.data || typeof importWrapper.data !== 'object') {
+            throw new Error('Invalid backup file format');
+          }
+          
+          // Filter to only allow chiriboga-prefixed keys (security)
+          var validKeys = {};
+          var skippedKeys = 0;
+          for (var key in importWrapper.data) {
+            if (importWrapper.data.hasOwnProperty(key)) {
+              if (typeof key === 'string' && key.indexOf('chiriboga') === 0) {
+                validKeys[key] = importWrapper.data[key];
+              } else {
+                skippedKeys++;
+              }
+            }
+          }
+          
+          var keyCount = Object.keys(validKeys).length;
+          if (keyCount === 0) {
+            throw new Error('No valid data found in backup');
+          }
+          
+          // Build confirmation message
+          var exportDate = importWrapper.exportDate ? new Date(importWrapper.exportDate).toLocaleDateString() : 'Unknown';
+          var message = 'Restore data from this backup?';
+          message += '<br><br>Backup date: <strong>' + exportDate + '</strong>';
+          message += '<br><br><span style="color:var(--crt-green-muted);font-size:11px;">This will overwrite your current settings and saves.</span>';
+          
+          showDataConfirm('RESTORE DATA', message, function() {
+            // Import each validated key
+            for (var key in validKeys) {
+              if (validKeys.hasOwnProperty(key)) {
+                localStorage.setItem(key, validKeys[key]);
+              }
+            }
+            
+            showDataAlert('IMPORT COMPLETE', 'Your data has been restored.<br><br>The page will now reload.', function() {
+              location.reload();
+            });
+          });
+        } catch (err) {
+          console.error('Failed to import data:', err);
+          showDataAlert('IMPORT FAILED', 'Could not restore data: ' + err.message);
+        }
+      };
+      
+      reader.readAsText(file);
+      
+      // Reset the file input so the same file can be selected again
+      event.target.value = '';
+    }
+
+    // Tutorial functions
+    var screenContentWidth = null;
+    var screenContentHeight = null;
+
+    function openTutorial(){ openMenuPanel('tutorial-panel'); }
+    function closeTutorial(){ closeMenuPanel('tutorial-panel'); }
+
+    // Gauntlet submenu toggle
+    function showGauntletSubmenu() {
+      var mainBtn = document.getElementById('gauntlet-main');
+      var submenu = document.getElementById('gauntlet-submenu');
+      if (mainBtn && submenu) {
+        mainBtn.style.display = 'none';
+        submenu.style.display = 'flex';
+        // Update continue button state based on localStorage
+        updateGauntletContinueButton();
+      }
+    }
+    
+    function hideGauntletSubmenu() {
+      var mainBtn = document.getElementById('gauntlet-main');
+      var submenu = document.getElementById('gauntlet-submenu');
+      if (mainBtn && submenu) {
+        mainBtn.style.display = '';
+        submenu.style.display = 'none';
+      }
+    }
+    
+    // Check if a saved gauntlet exists in localStorage
+    function hasGauntletSave() {
+      try {
+        var savedJson = localStorage.getItem('chiriboga-gauntlet-save');
+        if (savedJson) {
+          var saveData = JSON.parse(savedJson);
+          // Check if save has required data
+          return saveData && saveData.r && saveData.g;
+        }
+      } catch (e) {
+        console.error("Error checking gauntlet save:", e);
+      }
+      return false;
+    }
+    
+    // Update the continue button state
+    function updateGauntletContinueButton() {
+      var continueBtn = document.getElementById('gauntlet-continue-btn');
+      if (continueBtn) {
+        if (hasGauntletSave()) {
+          continueBtn.classList.remove('disabled');
+        } else {
+          continueBtn.classList.add('disabled');
+        }
+      }
+    }
+    
+    // Handle Continue button click
+    function handleGauntletContinue(evt) {
+      // Initialize achievements if not already present
+      initializeAchievements();
+      
+      var continueBtn = document.getElementById('gauntlet-continue-btn');
+      if (!hasGauntletSave() || continueBtn.classList.contains('disabled')) {
+        return false;
+      }
+      
+      try {
+        var savedJson = localStorage.getItem('chiriboga-gauntlet-save');
+        var saveData = JSON.parse(savedJson);
+        
+        // Navigate to gauntlet.html with saved parameters
+        var gauntletUrl = 'gauntlet.html?r=' + saveData.r + '&g=' + saveData.g;
+        window.location.href = gauntletUrl;
+      } catch (e) {
+        console.error("Error loading gauntlet save:", e);
+        var btn = evt.target;
+        btn.innerHTML = 'ERROR';
+        setTimeout(function() {
+          btn.innerHTML = 'CONTINUE';
+        }, 1500);
+      }
+    }
+    
+    function handleGauntletNew(evt) {
+      // Initialize achievements if not already present
+      initializeAchievements();
+      
+      // Check if there are enough gauntlet precons before launching
+      var gauntletCorpDecks = preconDecks.filter(function(d) {
+        if (!isPreconEnabledForGauntlet(d)) return false;
+        if (!cardSet[d.identity]) return false;
+        var identity = cardSet[d.identity];
+        return identity.player === corp;
+      });
+      
+      // Need at least gauntletLength precons total
+      var gauntletLength = settingsOverrides.gauntletLength || 4;
+      var newBtn = evt.target;
+      
+      if (gauntletCorpDecks.length < gauntletLength) {
+        newBtn.innerHTML = 'MISSING';
+        setTimeout(function() {
+          newBtn.innerHTML = 'NEW';
+        }, 1500);
+        return;
+      }
+      
+      // Need at least 1 precon for each corp faction
+      var requiredFactions = ['Jinteki', 'Haas-Bioroid', 'NBN', 'Weyland Consortium'];
+      var missingFaction = false;
+      for (var i = 0; i < requiredFactions.length; i++) {
+        var faction = requiredFactions[i];
+        var hasFaction = gauntletCorpDecks.some(function(d) {
+          return cardSet[d.identity].faction === faction;
+        });
+        if (!hasFaction) {
+          missingFaction = true;
+          break;
+        }
+      }
+      
+      if (missingFaction) {
+        newBtn.innerHTML = 'MISSING';
+        setTimeout(function() {
+          newBtn.innerHTML = 'NEW';
+        }, 1500);
+        return;
+      }
+      
+      LaunchGauntlet();
+    }
+    
+    // Hide gauntlet submenu when clicking elsewhere
+    document.addEventListener('click', function(e) {
+      var container = document.getElementById('gauntlet-container');
+      if (container && !container.contains(e.target)) {
+        hideGauntletSubmenu();
+      }
+    });
+    
+    function startTutorial(mentorIndex) {
+      // Initialize achievements if not already present
+      initializeAchievements();
+      
+      var tutorials = [
+        { side: 'r', mentor: 0 },
+        { side: 'r', mentor: 1 },
+        { side: 'r', mentor: 2 },
+        { side: 'r', mentor: 3 },
+        { side: 'r', mentor: 4 },
+        { side: 'c', mentor: 5 }
+      ];
+      var t = tutorials[mentorIndex];
+      if (!t) return;
+      window.location.href = 'engine.html?p=' + t.side + '&mentor=' + t.mentor + '&t=1';
+    }
+  </script>
+</body>
+</html>

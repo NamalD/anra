@@ -1,0 +1,1353 @@
+/* ==========================================================================
+   Deck builder (decklauncher) and Gauntlet pages.
+   Loaded after style.css, which provides the tokens and shared components.
+
+   Layout
+   - Phones in portrait: one column. Identity, stats and actions on top,
+     the deck list, then the card grid.
+   - Wider screens (landscape phones, tablets, desktop): a sticky sidebar
+     on the left holds everything but the card grid, which fills the rest.
+   ========================================================================== */
+
+:root {
+  --icon-plus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
+  --icon-minus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E");
+  --icon-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --icon-back: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 5-7 7 7 7'/%3E%3C/svg%3E");
+  --icon-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='9' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E");
+  --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  --card-radius: 4.6% / 3.3%;
+  --gutter: 16px;
+}
+
+/* ---- Page frame --------------------------------------------------------- */
+
+/* Body is the scroll container on these pages */
+body:has(#dataentry),
+body.deck-builder-page {
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  height: auto;
+  min-height: 100vh;
+}
+
+#contentcontainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  min-height: 100vh;
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+}
+
+#dataentry {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+#dataentry > br,
+.leftrow > br {
+  display: none;
+}
+
+.leftrow {
+  width: 100%;
+}
+
+/* Top bar: back to the menu and the page title */
+.page-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+}
+.page-bar .page-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.page-bar #exittomenu {
+  min-height: 40px;
+  padding: 8px 14px 8px 10px;
+  gap: 4px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.page-bar #exittomenu::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: var(--icon-back) center / contain no-repeat;
+  mask: var(--icon-back) center / contain no-repeat;
+}
+
+/* Small section headings ("Current deck") */
+.deck-heading,
+.section-label {
+  margin: 0 2px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ---- Identity, stats and opponent ---------------------------------------- */
+
+.identity-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+.identity-panel select {
+  flex: 1 1 100%;
+  width: 100%;
+  min-height: 48px;
+  font-weight: 600;
+}
+#identityselect:disabled {
+  opacity: 1;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+#identity {
+  flex: 0 0 auto;
+  width: 112px;
+  aspect-ratio: 300 / 419;
+  object-fit: cover;
+  border-radius: var(--card-radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+  color: transparent;
+  cursor: pointer;
+  transition: transform var(--fast) var(--ease);
+}
+#identity:active {
+  transform: scale(0.96);
+}
+
+.rightpart {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Problems the deck parser reports land in #output as plain text */
+#output {
+  font-size: 13px;
+  color: var(--danger);
+  line-height: 1.45;
+}
+
+.deck-stats {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+.deck-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 14px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.deck-stat + .deck-stat,
+.deck-stat + .collection-stat-wrapper,
+.collection-stat-wrapper + .deck-stat {
+  border-top: 1px solid var(--line);
+}
+.deck-stat .stat-label {
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: left;
+  white-space: nowrap;
+}
+.deck-stat.bad {
+  color: var(--danger);
+}
+
+/* Collection row expands into a per-faction breakdown */
+.collection-stat {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.collection-stat .stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.collection-stat .stat-label::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: var(--text-faint);
+  -webkit-mask: var(--icon-chevron-down) center / contain no-repeat;
+  mask: var(--icon-chevron-down) center / contain no-repeat;
+  transform: rotate(180deg);
+  transition: transform var(--med) var(--ease);
+}
+.collection-stat-wrapper.collapsed .collection-stat .stat-label::after {
+  transform: none;
+}
+.collection-stat-wrapper.collapsed .collection-details {
+  display: none;
+}
+.collection-details {
+  margin: 0 0 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  animation: sheet-in var(--med) var(--ease);
+}
+.collection-details > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Opponent box (deck builder): a header that expands to the identity */
+#opponentid {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+#opponentid .opponent-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background var(--fast) var(--ease);
+}
+#opponentid .opponent-header:active {
+  background: var(--surface-2);
+}
+#opponentid .opponent-title {
+  flex: 1;
+}
+#opponentid .opponent-arrow {
+  width: 16px;
+  height: 16px;
+  font-size: 0;
+  background: var(--text-muted);
+  -webkit-mask: var(--icon-chevron-down) center / contain no-repeat;
+  mask: var(--icon-chevron-down) center / contain no-repeat;
+  transition: transform var(--med) var(--ease);
+}
+#opponentid:not(.collapsed) .opponent-arrow {
+  transform: rotate(180deg);
+}
+#opponentid.collapsed .opponent-body {
+  display: none;
+}
+#opponentid .opponent-body {
+  padding: 2px 14px 14px;
+  cursor: pointer;
+  animation: sheet-in var(--med) var(--ease);
+}
+#opponentid .opponent-body img {
+  display: block;
+  width: 88px;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow);
+  transition: transform var(--fast) var(--ease);
+}
+#opponentid .opponent-body:active img {
+  transform: scale(0.96);
+}
+
+/* Gauntlet opponent gallery (legacy, kept in case it is shown) */
+#opponentid .opponent-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px 14px;
+}
+#opponentid .opponent-identity-img {
+  width: 52px;
+  border-radius: var(--card-radius);
+  cursor: pointer;
+  transition: transform var(--fast) var(--ease);
+}
+#opponentid .opponent-identity-img:active {
+  transform: scale(0.94);
+}
+#opponentid .opponent-identity-img.defeated {
+  filter: grayscale(1);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Pool check messages (gauntlet), inserted after the identity image */
+.pool-verification-alert,
+.pool-verification-warning {
+  order: 10;
+  flex: 1 1 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  animation: sheet-in var(--slow) var(--ease);
+}
+.pool-verification-warning {
+  border-color: rgba(243, 185, 79, 0.42);
+  background: var(--warning-soft);
+}
+.pool-verification-alert strong {
+  color: var(--danger);
+}
+.pool-verification-warning strong {
+  color: var(--warning);
+}
+
+/* ---- Action buttons ----------------------------------------------------- */
+
+.leftrow.buttons {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.leftrow.buttons .button {
+  grid-column: span 2;
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 8px;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 14px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+/* Cycling buttons show what they set on top and the current value below */
+.button small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+#launch {
+  grid-column: 1 / -1;
+  min-height: 54px;
+  flex-direction: row;
+  font-size: 16px;
+  font-weight: 650;
+}
+#buycards,
+#hackopponents {
+  grid-column: span 3;
+}
+#launch:disabled {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  color: var(--text-muted);
+  box-shadow: none;
+  opacity: 1;
+}
+
+/* ---- Deck list ---------------------------------------------------------- */
+
+/* Deck builder: editable text list */
+textarea#deck {
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  max-height: 60vh;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border-color: var(--line);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* Gauntlet: read-only list grouped by type */
+div#deck {
+  min-height: 80px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 14px;
+  color: var(--text-muted);
+  white-space: normal;
+}
+div#deck:empty::before {
+  content: "No cards yet";
+  display: block;
+  padding: 24px 0;
+  text-align: center;
+  color: var(--text-faint);
+}
+.deck-category + .deck-category {
+  margin-top: 6px;
+}
+.deck-category-header {
+  padding: 10px 10px 4px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.deck-card-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.deck-card-entry:active {
+  background: var(--surface-3);
+  transform: scale(0.98);
+}
+@media (hover: hover) {
+  .deck-card-entry:hover {
+    background: var(--surface-2);
+  }
+}
+.deck-card-info {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.deck-card-count {
+  flex: none;
+  min-width: 24px;
+  color: var(--text-faint);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.deck-card-title {
+  color: var(--text);
+  font-weight: 500;
+}
+.deck-card-subtype {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.deck-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.deck-actions .button {
+  flex: 1 1 0;
+  min-width: 120px;
+}
+
+/* jQuery UI autocomplete under the deck textarea */
+.ui-autocomplete.ui-menu.ui-widget-content {
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font);
+  font-size: 15px;
+  z-index: 10002;
+}
+.ui-autocomplete .ui-menu-item-wrapper {
+  margin: 0;
+  padding: 10px 12px;
+  border: 0 !important;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+.ui-autocomplete .ui-menu-item-wrapper.ui-state-active {
+  margin: 0;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* ---- Card grid ---------------------------------------------------------- */
+
+#cardcontainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 18px 10px;
+  align-content: start;
+  min-width: 0;
+}
+
+#cardcontainer .card-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+#cardcontainer .card-item img.card-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 300 / 419;
+  object-fit: cover;
+  border-radius: var(--card-radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: opacity var(--med) var(--ease), filter var(--med) var(--ease), transform var(--fast) var(--ease);
+}
+#cardcontainer .card-item img.card-image:active {
+  transform: scale(0.96);
+}
+#cardcontainer .card-item.not-in-deck img.card-image {
+  opacity: 0.42;
+  filter: saturate(0.4);
+}
+@media (hover: hover) {
+  #cardcontainer .card-item img.card-image:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  #cardcontainer .card-item.not-in-deck img.card-image:hover {
+    opacity: 0.75;
+    filter: none;
+  }
+}
+
+/* Copies in the deck (gauntlet: in deck / owned), top right of the art */
+#cardcontainer .count-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+#cardcontainer .count-badge.has-copies {
+  display: inline-flex;
+  animation: pop-in var(--med) var(--ease-spring);
+}
+#cardcontainer .card-item.not-in-deck .count-badge {
+  background: rgba(16, 18, 22, 0.86);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong), 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+#cardcontainer .card-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-bottom: 2px;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+#cardcontainer .card-item.not-in-deck .card-title {
+  color: var(--text-faint);
+}
+
+/* [−][+] (gauntlet: [−][sell][+]) as one segmented control */
+#cardcontainer .card-controls {
+  margin-top: auto;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+#cardcontainer .card-controls button {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+#cardcontainer .card-controls .add-btn::before,
+#cardcontainer .card-controls .remove-btn::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: var(--icon-plus) center / contain no-repeat;
+  mask: var(--icon-plus) center / contain no-repeat;
+}
+#cardcontainer .card-controls .remove-btn::before {
+  -webkit-mask-image: var(--icon-minus);
+  mask-image: var(--icon-minus);
+}
+#cardcontainer .card-controls .remove-btn {
+  color: var(--text-muted);
+}
+#cardcontainer .card-controls .add-btn {
+  color: var(--accent);
+}
+#cardcontainer .card-controls .sell-btn img {
+  height: 18px;
+  width: auto;
+  opacity: 0.9;
+}
+#cardcontainer .card-controls button:active {
+  transform: scale(0.88);
+  background: var(--surface-3);
+}
+@media (hover: hover) {
+  #cardcontainer .card-controls button:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* ---- Dialogs ------------------------------------------------------------ */
+
+.solo-menu .logo-text {
+  font-size: 22px;
+}
+.solo-menu > .logo-text {
+  padding-right: 44px;
+}
+.logo-text.is-danger {
+  color: var(--danger);
+}
+.logo-text.is-success {
+  color: var(--success);
+}
+
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.dialog-body strong {
+  color: var(--text);
+  font-weight: 650;
+}
+.dialog-body input[type="text"] {
+  width: 100%;
+  min-height: 48px;
+}
+.dialog-note {
+  font-size: 13px;
+  color: var(--text-faint);
+}
+.dialog-message:empty {
+  display: none;
+}
+.dialog-message {
+  font-size: 14px;
+  font-weight: 500;
+}
+.msg-error {
+  color: var(--danger);
+}
+.msg-ok {
+  color: var(--success);
+}
+
+.dialog-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dialog-actions.row {
+  flex-direction: row;
+}
+.dialog-actions .button {
+  width: 100%;
+  flex: 1 1 0;
+}
+
+/* Small coloured tag ("Boss perk", "Disabled") */
+.tag {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.tag.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.tag.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+/* Highlighted block: warnings, losses */
+.callout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.callout .callout-title {
+  color: var(--danger);
+  font-weight: 650;
+}
+.callout.warning {
+  border-color: rgba(243, 185, 79, 0.42);
+  background: var(--warning-soft);
+}
+.callout.warning .callout-title {
+  color: var(--warning);
+}
+
+/* Credits: a pill with the credit icon */
+.credit-icon {
+  display: inline-block;
+  width: auto;
+  height: 1em;
+  vertical-align: -0.14em;
+  margin: 0 1px;
+}
+.credits-pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.credits-pill .credits-label {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Option buttons with a price/chance on the right */
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.option-list > .button {
+  width: 100%;
+}
+.option-list > .button.option {
+  justify-content: space-between;
+  text-align: left;
+  gap: 12px;
+}
+.option .option-meta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.option .option-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text);
+}
+.option .option-chance {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 13px;
+}
+.option .tag {
+  align-self: center;
+}
+.shop-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.shop-summary strong {
+  color: var(--text);
+  font-weight: 650;
+}
+.option:disabled .option-chance {
+  background: var(--surface-3);
+  color: var(--text-muted);
+}
+
+/* Credits breakdown after a win */
+.ledger {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-variant-numeric: tabular-nums;
+}
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.ledger-row .ledger-value {
+  font-weight: 650;
+  color: var(--text);
+}
+.ledger-row .ledger-value.positive {
+  color: var(--success);
+}
+.ledger-row .ledger-value.negative {
+  color: var(--danger);
+}
+.ledger-total {
+  margin-top: 4px;
+  padding: 10px 0 6px;
+  border-top: 1px solid var(--line-strong);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ledger-note {
+  padding-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* Opponent picker (select next opponent, hack opponent) */
+.select-opponent-gallery,
+.hack-opponent-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 16px 10px;
+}
+.select-opponent-item,
+.hack-opponent-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  cursor: pointer;
+  animation: pop-in var(--med) var(--ease) backwards;
+  transition: transform var(--fast) var(--ease);
+}
+.select-opponent-item:nth-child(2), .hack-opponent-item:nth-child(2) { animation-delay: 25ms; }
+.select-opponent-item:nth-child(3), .hack-opponent-item:nth-child(3) { animation-delay: 50ms; }
+.select-opponent-item:nth-child(4), .hack-opponent-item:nth-child(4) { animation-delay: 75ms; }
+.select-opponent-item:nth-child(5), .hack-opponent-item:nth-child(5) { animation-delay: 100ms; }
+.select-opponent-item:nth-child(6), .hack-opponent-item:nth-child(6) { animation-delay: 125ms; }
+.select-opponent-item:nth-child(n+7), .hack-opponent-item:nth-child(n+7) { animation-delay: 150ms; }
+.select-opponent-item:active,
+.hack-opponent-item:active {
+  transform: scale(0.95);
+}
+.select-opponent-img,
+.hack-opponent-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 300 / 419;
+  object-fit: cover;
+  border-radius: var(--card-radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+  transition: box-shadow var(--fast) var(--ease), filter var(--med) var(--ease);
+}
+.select-opponent-name,
+.hack-opponent-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text);
+}
+@media (hover: hover) {
+  .select-opponent-item:not(.defeated):not(.locked):hover .select-opponent-img,
+  .hack-opponent-item:not(.defeated):not(.locked):hover .hack-opponent-img {
+    box-shadow: 0 0 0 2px var(--accent), var(--shadow);
+  }
+  .select-opponent-item.boss:not(.defeated):not(.locked):hover .select-opponent-img,
+  .hack-opponent-item.boss:not(.defeated):not(.locked):hover .hack-opponent-img {
+    box-shadow: 0 0 0 2px var(--danger), var(--shadow);
+  }
+}
+
+/* Bosses: red ring and name, plus a tag */
+.select-opponent-item.boss .select-opponent-img,
+.hack-opponent-item.boss .hack-opponent-img {
+  box-shadow: 0 0 0 2px var(--danger-line), var(--shadow);
+}
+.select-opponent-item.boss .select-opponent-name,
+.hack-opponent-item.boss .hack-opponent-name {
+  color: var(--danger);
+}
+/* State tag over the art: Boss / Beaten / Locked */
+.select-opponent-item::before,
+.hack-opponent-item::before {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.select-opponent-item.boss::before,
+.hack-opponent-item.boss::before {
+  content: "Boss";
+  background: var(--danger);
+  color: #22070a;
+}
+.select-opponent-item.defeated::before,
+.hack-opponent-item.defeated::before {
+  content: "Beaten";
+  background: var(--success);
+  color: #04180f;
+}
+.select-opponent-item.locked::before,
+.hack-opponent-item.locked::before {
+  content: "Locked";
+  background: var(--surface-4);
+  color: var(--text);
+}
+.select-opponent-item.boss.locked::before,
+.hack-opponent-item.boss.locked::before {
+  content: "Locked boss";
+}
+.select-opponent-item.defeated,
+.select-opponent-item.locked,
+.hack-opponent-item.defeated,
+.hack-opponent-item.locked {
+  cursor: default;
+  pointer-events: none;
+}
+.select-opponent-item.defeated .select-opponent-img,
+.select-opponent-item.locked .select-opponent-img,
+.hack-opponent-item.defeated .hack-opponent-img,
+.hack-opponent-item.locked .hack-opponent-img {
+  filter: grayscale(1) brightness(0.55);
+}
+.select-opponent-item.defeated .select-opponent-name,
+.select-opponent-item.locked .select-opponent-name,
+.hack-opponent-item.defeated .hack-opponent-name,
+.hack-opponent-item.locked .hack-opponent-name {
+  color: var(--text-faint);
+}
+
+/* Card thumbnails inside dialogs (pack contents, lost cards) */
+.thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 10px;
+}
+.thumb-grid.large {
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+}
+.thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  cursor: pointer;
+  animation: pop-in var(--med) var(--ease) backwards;
+}
+.thumb:nth-child(2) { animation-delay: 30ms; }
+.thumb:nth-child(3) { animation-delay: 60ms; }
+.thumb:nth-child(4) { animation-delay: 90ms; }
+.thumb:nth-child(5) { animation-delay: 120ms; }
+.thumb:nth-child(n+6) { animation-delay: 150ms; }
+.thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 300 / 419;
+  object-fit: cover;
+  border-radius: var(--card-radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+  transition: transform var(--fast) var(--ease);
+}
+.thumb:active img {
+  transform: scale(0.95);
+}
+.thumb span {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.callout .thumb img {
+  box-shadow: 0 0 0 2px var(--danger-line), var(--shadow);
+}
+
+/* Opponent decklist (after a successful hack) */
+.decklist-container {
+  max-height: min(50dvh, 420px);
+  overflow-y: auto;
+  padding: 4px 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 14px;
+  color: var(--text);
+}
+.decklist-type {
+  padding: 10px 0 4px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text-faint);
+}
+.decklist-line {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+}
+.decklist-line .decklist-count {
+  min-width: 24px;
+  color: var(--text-faint);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Plain list (sold cards) */
+.plain-list {
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  list-style: none;
+  font-size: 14px;
+  color: var(--text);
+}
+.plain-list li {
+  padding: 4px 0;
+}
+
+/* Sell card dialog */
+.sell-modal-card {
+  display: block;
+  width: 132px;
+  margin: 0 auto;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-lg);
+  animation: pop-in var(--slow) var(--ease);
+}
+.sell-modal-name {
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--text);
+  text-align: center;
+}
+.sell-modal-text {
+  text-align: center;
+}
+.sell-modal-stepper {
+  align-self: center;
+}
+.sell-modal-qty {
+  min-width: 44px;
+  font-size: 18px;
+}
+.sell-modal-credit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.sell-modal-credit-value {
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Saved decks list (deck builder) */
+#load-deck-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(55dvh, 440px);
+  overflow-y: auto;
+}
+.load-deck-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  animation: sheet-in var(--med) var(--ease) backwards;
+}
+.load-deck-info {
+  flex: 1;
+  min-width: 0;
+}
+.load-deck-name {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.load-deck-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.load-deck-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+.load-deck-buttons .button {
+  min-height: 38px;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+.button.danger-ghost {
+  color: var(--danger);
+}
+
+/* ---- Card lightbox on phones -------------------------------------------- */
+
+@media (max-width: 860px) {
+  #lightbox {
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+  #lightbox-content {
+    width: 100%;
+    padding: 16px;
+  }
+  #lightbox-body {
+    gap: 14px;
+    max-height: calc(100dvh - 56px);
+  }
+  #lightbox-img {
+    width: min(64vw, 270px);
+    max-width: none;
+  }
+  #lightbox-text {
+    padding: 0 4px;
+    overflow: visible;
+  }
+  #lightbox-prev,
+  #lightbox-next {
+    top: min(45vw, 188px);
+    width: 44px;
+    height: 44px;
+  }
+}
+#lightbox-text pre {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+/* The NSG icons are served as coloured glyph discs (see mobile/sw.js), so
+   the shared rule that whitens .card-icon in card text would blank them. */
+#lightbox .card-text-info .card-icon {
+  filter: none;
+}
+#lightbox-text .card-influence {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ---- Wider screens: sidebar + grid -------------------------------------- */
+
+@media (min-width: 769px) {
+  #contentcontainer {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0;
+    padding: 0;
+  }
+  #dataentry {
+    position: sticky;
+    top: 0;
+    flex: 0 0 340px;
+    width: 340px;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    gap: 16px;
+    padding: max(8px, env(safe-area-inset-top)) 16px 24px max(16px, env(safe-area-inset-left));
+    background: var(--bg-raised);
+    border-right: 1px solid var(--line);
+  }
+  #cardcontainer {
+    flex: 1 1 0;
+    padding: 16px max(16px, env(safe-area-inset-right)) 32px 16px;
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  }
+  .leftrow.buttons .button {
+    min-height: 48px;
+    font-size: 13px;
+  }
+  #launch {
+    min-height: 50px;
+    font-size: 15px;
+  }
+  #identity {
+    width: 100px;
+  }
+  textarea#deck {
+    max-height: none;
+  }
+}
+
+@media (min-width: 1200px) {
+  #dataentry {
+    flex-basis: 380px;
+    width: 380px;
+  }
+  #cardcontainer {
+    gap: 22px 14px;
+    padding: 24px 24px 40px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  #cardcontainer .card-title {
+    font-size: 13px;
+  }
+}
+
+/* Short landscape phones: tighter sidebar, lightbox card fits the height */
+@media (orientation: landscape) and (max-height: 500px) {
+  #lightbox-img {
+    width: auto;
+    max-width: 40vw;
+    max-height: calc(100dvh - 110px);
+  }
+  #lightbox-body {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  #lightbox-text {
+    overflow-y: auto;
+    max-height: calc(100dvh - 110px);
+  }
+  #lightbox-prev,
+  #lightbox-next {
+    top: 50%;
+  }
+}
+@media (min-width: 769px) and (max-height: 500px) {
+  #dataentry {
+    flex-basis: 320px;
+    width: 320px;
+    gap: 12px;
+  }
+  .page-bar {
+    min-height: 44px;
+  }
+  .page-bar .page-title {
+    font-size: 18px;
+  }
+  #identity {
+    width: 88px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}
